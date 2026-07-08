@@ -1,0 +1,10 @@
+Function Get-PRTGnetworkTraffic
+    {
+        param(
+        [Parameter(Mandatory=$true)]
+        $SensorID)
+        $Sensor = get-sensor -Id $SensorID
+        $ChartTitle = ("$($sensor.Probe) - $($sensor.Device) - $($sensor.Name)")
+        $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-30)) -Average 84700 | Select-Object @{N='Date';E={(Get-Date $_.Datetime -Format dd/MMM/yyyy)}},@{N='Total';E={$_.'TrafficTotal(Volume)'}},@{N='In';E={$_.'TrafficIn(Volume)'}},@{N='Out';E={$_.'TrafficOut(Volume)'}} | Sort-Object {[datetime]$_.Date}
+        Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'Network Traffic (MB)' -Dataset1 ($SensorHistory | Select-Object 'Total') -Dataset2 ($SensorHistory | Select-Object 'In') -Dataset3  ($SensorHistory | Select-Object 'Out')
+    }
