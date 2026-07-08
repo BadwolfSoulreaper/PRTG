@@ -1,0 +1,10 @@
+    Function Get-PRTGdiskFree
+    {
+        param(
+        [Parameter(Mandatory=$true)]
+        $SensorID)
+        $Sensor = get-sensor -Id $SensorID
+        $ChartTitle = ("$($sensor.Probe) - $($sensor.Device) - $($sensor.Name.replace('\','')) - ($(($SensorHistory | Select-Object -First 1).Total)GB Total)")
+        $SensorHistory = $Sensor | Get-SensorHistory -EndDate ((get-date).AddDays(-30)) -Average 84700 | Select-Object @{N='Date';E={(Get-Date $_.Datetime -Format dd/MMM/yyyy)}},@{N='PercentFree';E={$_.'FreeSpace'}},Total | Sort-Object {[datetime]$_.Date}
+        Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType "Percentage of free disk space" -Dataset1 ($SensorHistory | Select-Object 'PercentFree') 
+    }
