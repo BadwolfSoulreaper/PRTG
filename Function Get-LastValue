@@ -1,0 +1,4 @@
+Function Get-LastValue{
+    Param($Table,$Name)
+    Return ($Table | Where-Object{$_.Name -eq $Name}).LastValue
+}
