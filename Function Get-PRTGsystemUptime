@@ -1,0 +1,7 @@
+Function Get-PRTGsystemUptime {
+    param(
+        [Parameter(Mandatory = $true)]
+        $SensorID
+    )
+    Return (Get-Sensor -ID $SensorID | Select-Object @{N = 'SensorGroup'; E = { $_.Group } }, Device, TotalUptime, TotalDowntime)
+}
