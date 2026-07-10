@@ -1,0 +1,13 @@
+Function Get-PRTGwmiSecurityCentre {
+    param(
+        [parameter(Mandatory = $true)]
+        $SensorID
+    )
+    $Sensor = Get-Sensor -Id $SensorID
+    Return ([PSCustomObject]@{
+            SensorGroup = $Sensor.Group
+            Device      = $Sensor.Device
+            Name        = $Sensor.Name
+            Status      = $Sensor.DisplayLastValue
+        })
+}
