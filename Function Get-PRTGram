@@ -1,0 +1,10 @@
+Function Get-PRTGram {
+    param(
+        [Parameter(Mandatory = $true)]
+        $SensorID,
+        [int]$Dayrange = 30)
+    $Sensor = get-sensor -Id $SensorID
+    $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-$Dayrange)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, @{N = 'Available'; E = { $_.'PercentAvailableMemory' } }, TotalMemory | Sort-Object { [datetime]$_.Date }
+    $ChartTitle = ("$($sensor.Probe) - $($sensor.Device) - $($sensor.Name) - ($(($SensorHistory | Select-Object -First 1).TotalMemory)GB Total)")
+    Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'RAM (Percent)' -Dataset1 ($SensorHistory | Select-Object 'Available') 
+}
