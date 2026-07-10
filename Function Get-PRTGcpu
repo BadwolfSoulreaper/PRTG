@@ -1,10 +1,10 @@
-    Function Get-PRTGcpu
-    {
-        param(
-        [Parameter(Mandatory=$true)]
-        $SensorID)
-        $Sensor = get-sensor -Id $SensorID
-        $ChartTitle = ("$($sensor.Probe) - $($sensor.Device) - $($sensor.Name)")
-        $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-30)) -Average 84700 | Select-Object @{N='Date';E={(Get-Date $_.Datetime -Format dd/MMM/yyyy)}},@{N='Total';E={$_.'Total'}} | Sort-Object {[datetime]$_.Date}
-        Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'Total CPU Usage (Percent)' -Dataset1 ($SensorHistory | Select-Object 'Total') 
-    }
+Function Get-PRTGcpu {
+    param(
+        [Parameter(Mandatory = $true)]
+        $SensorID,
+        [int]$Dayrange = 30)
+    $Sensor = get-sensor -Id $SensorID
+    $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-$Dayrange)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, @{N = 'Total'; E = { $_.'Total' } } | Sort-Object { [datetime]$_.Date }
+    $ChartTitle = ("$($sensor.Probe) - $($sensor.Device) - $($sensor.Name) - ")
+    Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'Total CPU Usage (Percent)' -Dataset1 ($SensorHistory | Select-Object 'Total') 
+}
