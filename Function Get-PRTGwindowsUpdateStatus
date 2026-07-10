@@ -1,0 +1,14 @@
+Function Get-PRTGwindowsUpdateStatus {
+    param(
+        [Parameter(Mandatory = $true)]
+        $SensorID
+    )
+    $Sensor = Get-Sensor -Id $SensorID
+    $Channel = $Sensor | Get-Channel
+    $LastUpdated = New-TimeSpan -Seconds ($Channel | Where-Object{$_.Name -eq 'Time Since Last Update'}).LastValue
+    Return ([PSCustomObject]@{
+        SensorGroup = $Sensor.Group
+        Device = $Sensor.Device
+        'LastUpdated' = "$($LastUpdated.Days)d $($LastUpdated.Hours)h $($LastUpdated.Minutes)m"
+    })
+}
