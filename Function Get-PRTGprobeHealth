@@ -3,7 +3,18 @@ Function Get-PRTGprobeHealth {
         [Parameter(Mandatory = $true)]
         $SensorID)
     $Sensor = get-sensor -Id $SensorID
-    $ChartTitle = ("$($sensor.Probe) - $($sensor.Device) - $($sensor.Name)")
-    $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-30)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, @{N = 'MsgQ'; E = { $_.'MessageQueue' } }, @{N = 'DelayWMI'; E = { $_.IntervalDelayWMI.Split(' ')[0] } }, @{N = 'RAMuseGB'; E = { $_.'MemoryUsage' } } | Sort-Object { [datetime]$_.Date }
-    Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'MsgQ Items, DelayWMI %, RAM Use (GB)' -Dataset1 ($SensorHistory | Select-Object 'MsgQ') -Dataset2 ($SensorHistory | Select-Object 'DelayWMI') -Dataset3  ($SensorHistory | Select-Object 'RAMuseGB')
-}
+    $Channel = $Sensor | Get-Channel
+    Return ([PSCustomObject]@{
+        Device = $Sensor.Device
+        Health = (Get-LastValue -Table $Channel -Name 'Health')
+        'Open Requests (100)' = (Get-LastValue -Table $Channel -Name 'Open Requests')
+        'Threads (1400)' = (Get-LastValue -Table $Channel -Name 'Threads')
+        'Delay WMI (100)' = (Get-LastValue -Table $Channel -Name 'Interval Delay WMI')
+        'Delay SNMP (100)' = (Get-LastValue -Table $Channel -Name 'Interval Delay SNMP')
+        'Delay non-WMI or SNMP (100)' = (Get-LastValue -Table $Channel -Name 'Interval Delay non-WMI&SNMP')
+        'Memory Usage GB (3)' = [math]::round((Get-LastValue -Table $Channel -Name 'Memory Usage')/1gb,2)
+        'Lost Packets (10)' = (Get-LastValue -Table $Channel -Name 'Lost Flow Packets')
+        'Toplist Memory (2)' = (Get-LastValue -Table $Channel -Name 'Toplist Memory')
+        'Storage Free GB' = [math]::round((Get-LastValue -Table $Channel -Name 'Data Storage Free')/1gb,2)
+    })
+   }
