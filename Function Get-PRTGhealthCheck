@@ -1,0 +1,697 @@
+Function Get-PRTGhealthCheck {
+    param($Customer, $OutputFolder)
+    Function Show-Kubus {
+        [Console]::Clear();[Console]::SetCursorPosition(0, 0);$colors = [Enum]::GetValues([ConsoleColor]) | Where-Object { $_ -ne "Black" }; $randomColor = Get-Random -InputObject $colors; $s = ' ' * 30
+        Write-Host("`n$s _  __        _           `n$s| |/ / _   _ | |__   _   _  ___  `n$s| ' / | | | || '_ \ | | | |/ __| `n$s| . \ | |_| || |_) || |_| |\__ \ `n$s|_|\_\ \__,_||_.__/  \__,_||___/ `n$s           +------+`n$s          /      /|`n$s         +------+ |`n$s         |      | |`n$s         |      | +`n$s         |      |/`n$s         +------+`n$s  We make the complex simple`n`n") -ForegroundColor $randomColor #Show Kubus!
+    }
+    $Probe = Get-Probe | Where-Object { $_.Name -eq $Customer }
+    $File = ("$Customer-$(Get-date -Format ddMMyyyyHHmm)")
+    $OutputFile = "$($OutputFolder.TrimEnd('\'))\$File"
+    If ($Probe.Count -eq 1) {
+        $PRTGbandwidth = @()
+        $PRTGcorehealth = @()
+        $PRTGcpu = @()
+        $PRTGdiskFree = @()
+        $PRTGnetworkTraffic = @()
+        $PRTGping = @()
+        $PRTGprobeHealth = @()
+        $PRTGram = @()
+        $PRTGsystemHealthSensor = @()
+        $PRTGsystemUptime = @()
+        $PRTGwindowsUpdateStatus = @()
+        $PRTGwmiSecurityCentre = @()
+        Function Get-LineGraph {
+            param([Parameter(Mandatory = $true)]
+                $ChartName,
+                [Parameter(Mandatory = $true)]
+                $XaxisLabels,
+                [Parameter(Mandatory = $true)]
+                $ValueType,
+                $OutputFilePath,
+                [Switch]$Append = $false,
+                [Parameter(Mandatory = $true)]
+                $Dataset1, $Dataset2, $Dataset3, $Dataset4, $Dataset5, $Dataset6, $Dataset7, $Dataset8, $Dataset9, $Dataset10, $Dataset11, $Dataset12, $Dataset13, $Dataset14, $Dataset15, $Dataset16, $Dataset17, $Dataset18, $Dataset19, $Dataset20, $Dataset21, $Dataset22, $Dataset23, $Dataset24, $Dataset25, $Dataset26, $Dataset27, $Dataset28, $Dataset29, $Dataset30, $Dataset31, $Dataset32, $Dataset33, $Dataset34, $Dataset35, $Dataset36, $Dataset37, $Dataset38, $Dataset39, $Dataset40)
+
+            $ChartID = $ChartName.Replace(' ', '')
+            Function Get-DataArray {
+                param(
+                    [Parameter(Mandatory = $true)]
+                    [string]$DatasetName,
+                    [Parameter(Mandatory = $true)]
+                    [object[]]$Data
+                )
+                Return ("var $DatasetName = [$($Data -join ',')];")
+            }
+
+            Function Get-Dataset {
+                param(
+                    $DatasetName
+                )
+                Return ('{label: "' + $Datasetname + '",data: ' + $Datasetname + ',tension: 0.4,borderWidth: 3,pointRadius: 4,pointHoverRadius: 7,fill: false}')   
+            }
+            try {
+                $Dataset1Name = ($Dataset1 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                $XaxisText = ($XaxisLabels | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                $Dataarray = "var labels = [" + ($XaxisLabels | Select-Object -ExpandProperty $XaxisText | ForEach-Object { '"' + $_ + '",' }) + "];"
+                $DataArray += Get-DataArray -DatasetName $Dataset1Name -Data ($Dataset1 | Select-Object -ExpandProperty $Dataset1Name)
+                $Dataset = Get-Dataset -DatasetName $Dataset1Name
+
+                If ($Dataset2) {
+                    $Dataset2Name = ($Dataset2 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset2Name -Data ($Dataset2 | Select-Object -ExpandProperty $Dataset2Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset2Name)
+                }
+
+                If ($Dataset3) {
+                    $Dataset3Name = ($Dataset3 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset3Name -Data ($Dataset3 | Select-Object -ExpandProperty $Dataset3Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset3Name)
+                }
+
+                If ($Dataset4) {
+                    $Dataset4Name = ($Dataset4 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset4Name -Data ($Dataset4 | Select-Object -ExpandProperty $Dataset4Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset4Name)
+                }
+
+                If ($Dataset5) {
+                    $Dataset5Name = ($Dataset5 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset5Name -Data ($Dataset5 | Select-Object -ExpandProperty $Dataset5Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset5Name)
+                }
+
+                If ($Dataset6) {
+                    $Dataset6Name = ($Dataset6 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset6Name -Data ($Dataset6 | Select-Object -ExpandProperty $Dataset6Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset6Name)
+                }
+
+                If ($Dataset7) {
+                    $Dataset7Name = ($Dataset7 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset7Name -Data ($Dataset7 | Select-Object -ExpandProperty $Dataset7Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset7Name)
+                }
+
+                If ($Dataset8) {
+                    $Dataset8Name = ($Dataset8 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset8Name -Data ($Dataset8 | Select-Object -ExpandProperty $Dataset8Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset8Name)
+                }
+
+                If ($Dataset9) {
+                    $Dataset9Name = ($Dataset9 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset9Name -Data ($Dataset9 | Select-Object -ExpandProperty $Dataset9Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset9Name)
+                }
+
+                If ($Dataset10) {
+                    $Dataset10Name = ($Dataset10 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset10Name -Data ($Dataset10 | Select-Object -ExpandProperty $Dataset10Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset10Name)
+                }
+
+                If ($Dataset11) {
+                    $Dataset11Name = ($Dataset11 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset11Name -Data ($Dataset11 | Select-Object -ExpandProperty $Dataset11Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset11Name)
+                }
+
+                If ($Dataset12) {
+                    $Dataset12Name = ($Dataset12 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset12Name -Data ($Dataset12 | Select-Object -ExpandProperty $Dataset12Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset12Name)
+                }
+
+                If ($Dataset13) {
+                    $Dataset13Name = ($Dataset13 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset13Name -Data ($Dataset13 | Select-Object -ExpandProperty $Dataset13Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset13Name)
+                }
+
+                If ($Dataset14) {
+                    $Dataset14Name = ($Dataset14 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset14Name -Data ($Dataset14 | Select-Object -ExpandProperty $Dataset14Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset14Name)
+                }
+
+                If ($Dataset15) {
+                    $Dataset15Name = ($Dataset15 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset15Name -Data ($Dataset15 | Select-Object -ExpandProperty $Dataset15Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset15Name)
+                }
+
+                If ($Dataset16) {
+                    $Dataset16Name = ($Dataset16 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset16Name -Data ($Dataset16 | Select-Object -ExpandProperty $Dataset16Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset16Name)
+                }
+
+                If ($Dataset17) {
+                    $Dataset17Name = ($Dataset17 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset17Name -Data ($Dataset17 | Select-Object -ExpandProperty $Dataset17Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset17Name)
+                }
+
+                If ($Dataset18) {
+                    $Dataset18Name = ($Dataset18 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset18Name -Data ($Dataset18 | Select-Object -ExpandProperty $Dataset18Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset18Name)
+                }
+
+                If ($Dataset19) {
+                    $Dataset19Name = ($Dataset19 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset19Name -Data ($Dataset19 | Select-Object -ExpandProperty $Dataset19Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset19Name)
+                }
+
+                If ($Dataset20) {
+                    $Dataset20Name = ($Dataset20 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset20Name -Data ($Dataset20 | Select-Object -ExpandProperty $Dataset20Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset20Name)
+                }
+
+                If ($Dataset21) {
+                    $Dataset21Name = ($Dataset21 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset21Name -Data ($Dataset21 | Select-Object -ExpandProperty $Dataset21Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset21Name)
+                }
+
+                If ($Dataset22) {
+                    $Dataset22Name = ($Dataset22 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset22Name -Data ($Dataset22 | Select-Object -ExpandProperty $Dataset22Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset22Name)
+                }
+
+                If ($Dataset23) {
+                    $Dataset23Name = ($Dataset23 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset23Name -Data ($Dataset23 | Select-Object -ExpandProperty $Dataset23Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset23Name)
+                }
+
+                If ($Dataset24) {
+                    $Dataset24Name = ($Dataset24 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset24Name -Data ($Dataset24 | Select-Object -ExpandProperty $Dataset24Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset24Name)
+                }
+
+                If ($Dataset25) {
+                    $Dataset25Name = ($Dataset25 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset25Name -Data ($Dataset25 | Select-Object -ExpandProperty $Dataset25Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset25Name)
+                }
+
+                If ($Dataset26) {
+                    $Dataset26Name = ($Dataset26 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset26Name -Data ($Dataset26 | Select-Object -ExpandProperty $Dataset26Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset26Name)
+                }
+
+                If ($Dataset27) {
+                    $Dataset27Name = ($Dataset27 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset27Name -Data ($Dataset27 | Select-Object -ExpandProperty $Dataset27Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset27Name)
+                }
+
+                If ($Dataset28) {
+                    $Dataset28Name = ($Dataset28 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset28Name -Data ($Dataset28 | Select-Object -ExpandProperty $Dataset28Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset28Name)
+                }
+
+                If ($Dataset29) {
+                    $Dataset29Name = ($Dataset29 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset29Name -Data ($Dataset29 | Select-Object -ExpandProperty $Dataset29Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset29Name)
+                }
+
+                If ($Dataset30) {
+                    $Dataset30Name = ($Dataset30 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset30Name -Data ($Dataset30 | Select-Object -ExpandProperty $Dataset30Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset30Name)
+                }
+
+                If ($Dataset31) {
+                    $Dataset31Name = ($Dataset31 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset31Name -Data ($Dataset31 | Select-Object -ExpandProperty $Dataset31Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset31Name)
+                }
+
+                If ($Dataset32) {
+                    $Dataset32Name = ($Dataset32 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset32Name -Data ($Dataset32 | Select-Object -ExpandProperty $Dataset32Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset32Name)
+                }
+
+                If ($Dataset33) {
+                    $Dataset33Name = ($Dataset33 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset33Name -Data ($Dataset33 | Select-Object -ExpandProperty $Dataset33Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset33Name)
+                }
+
+                If ($Dataset34) {
+                    $Dataset34Name = ($Dataset34 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset34Name -Data ($Dataset34 | Select-Object -ExpandProperty $Dataset34Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset34Name)
+                }
+
+                If ($Dataset35) {
+                    $Dataset35Name = ($Dataset35 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset35Name -Data ($Dataset35 | Select-Object -ExpandProperty $Dataset35Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset35Name)
+                }
+
+                If ($Dataset36) {
+                    $Dataset36Name = ($Dataset36 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset36Name -Data ($Dataset36 | Select-Object -ExpandProperty $Dataset36Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset36Name)
+                }
+
+                If ($Dataset37) {
+                    $Dataset37Name = ($Dataset37 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset37Name -Data ($Dataset37 | Select-Object -ExpandProperty $Dataset37Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset37Name)
+                }
+
+                If ($Dataset38) {
+                    $Dataset38Name = ($Dataset38 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset38Name -Data ($Dataset38 | Select-Object -ExpandProperty $Dataset38Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset38Name)
+                }
+
+                If ($Dataset39) {
+                    $Dataset39Name = ($Dataset39 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset39Name -Data ($Dataset39 | Select-Object -ExpandProperty $Dataset39Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset39Name)
+                }
+
+                If ($Dataset40) {
+                    $Dataset40Name = ($Dataset40 | Get-Member -MemberType Properties | Select-Object Name -Unique).Name
+                    $DataArray += Get-DataArray -DatasetName $Dataset40Name -Data ($Dataset40 | Select-Object -ExpandProperty $Dataset40Name)
+                    $Dataset += "," + (Get-Dataset -DatasetName $Dataset40Name)
+                }
+
+                $header = '<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><script src="https://cdn.jsdelivr.net/npm/chart.js"></script><style>body {font-family: Arial, sans-serif;margin: 40px;background: #f6f7f9;color: #222;}.chart-wrapper {max-width: 1100px;margin: 0 auto;padding: 24px;background: #fff;border-radius: 12px;box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);} h1 {text-align: center;margin-bottom: 24px;font-size: 1.5rem;}.chart-container {position: relative;height: 500px;width: 100%;}</style><div class="chart-wrapper"><h1>' + $ChartName + '</h1><div class="chart-container"><canvas id="' + $ChartID + '"></canvas></div></div><script>'
+                $ChartPlot = 'var ctx = document.getElementById("' + $ChartID + '");new Chart(ctx, {type: "line",data: {labels: labels,datasets: [' + $Dataset.replace('(', '_').Replace(')', '') + ']}, options: {responsive: true,maintainAspectRatio: false,animation: false,plugins: {tooltip: {callbacks: {label: function(context) {return "' + $ValueType + '" + context.raw.toLocaleString();}}}},scales: {x: {title: {display: true,text: "' + $XaxisText + '"},ticks: {maxRotation: 60,minRotation: 60}},y: {beginAtZero: true,title: {display: true,text: "' + $ValueType + '"},ticks: {callback: function(value) {return value.toLocaleString();}}}}}});</script>'
+
+                if ($OutputFilePath) {
+                    if ($Append) { $header | out-file $OutputFilePath -Append }else { $header | out-file $OutputFilePath }
+                    $DataArray.replace('(', '_').Replace(')', '') | out-file $OutputFilePath -Append
+                    $ChartPlot | out-file $OutputFilePath -Append
+                }
+                else {
+                    $HTML = $header + $DataArray.replace('(', '_').Replace(')', '') + $ChartPlot
+                    Return $HTML
+                }
+            }
+            catch {
+                Write-Output("Error creating $ChartName<BR>")
+            }
+            
+        }
+        Function Get-PrettyDate {
+            param([datetime]$Date)
+            if (!($Date)) {
+                $Date = Get-Date
+            }
+            Switch ($Date.Day) {
+                { $_ -in 1, 21, 31 } { $dateSuffix = 'st' }
+                { $_ -in 2, 22 } { $dateSuffix = 'nd' }
+                { $_ -in 3, 23 } { $dateSuffix = 'rd' }
+                default { $dateSuffix = 'th' }
+            }
+            Write-Output("$($Date.Day)$dateSuffix of $(Get-date -Date $Date -Format 'MMMM yyyy - HH:mm')")
+        }
+        function ConvertTo-ValueTable {
+            [CmdletBinding()]
+            param (
+                [Parameter(
+                    Mandatory,
+                    ValueFromPipeline
+                )]
+                [object[]]$InputObject
+            )
+
+            begin {
+                $Properties = [ordered]@{}
+            }
+
+            process {
+                foreach ($Row in $InputObject) {
+                    if ($null -ne $Row.Name) {
+                        $Properties[$Row.Name.ToString().Trim()] = $Row.LastValue
+                    }
+                }
+            }
+
+            end {
+                [PSCustomObject]$Properties
+            }
+        }
+        Function Get-LastValue {
+            Param($Table, $Name)
+            Return ($Table | Where-Object { $_.Name -eq $Name }).LastValue
+        }
+
+        Function Get-PRTGping {
+            param(
+                [Parameter(Mandatory = $true)]
+                $SensorID,
+                [int]$Dayrange = 30)
+            $Sensor = get-sensor -Id $SensorID
+            $ChartTitle = ("$($sensor.Probe) - $($sensor.Device) - $($sensor.Name)")
+            $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-$Dayrange)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, @{N = 'PingTime(ms)'; E = { [int]$_.PingTime } }, @{N = 'PacketLoss'; E = { [int]$_.PacketLoss } } | Sort-Object { [datetime]$_.Date }
+            Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'Time (ms), #Packets Dropped' -Dataset1 ($SensorHistory | Select-Object 'PingTime(ms)') -Dataset2 ($SensorHistory | Select-Object PacketLoss)
+        }
+
+        Function Get-PRTGnetworkTraffic {
+            param(
+                [Parameter(Mandatory = $true)]
+                $SensorID,
+                [int]$Dayrange = 30)
+            $Sensor = get-sensor -Id $SensorID
+            $ChartTitle = ("$($sensor.Probe) - $($sensor.Device) - $($sensor.Name)")
+            $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-$Dayrange)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, @{N = 'Total'; E = { $_.'TrafficTotal(Volume)' } }, @{N = 'In'; E = { $_.'TrafficIn(Volume)' } }, @{N = 'Out'; E = { $_.'TrafficOut(Volume)' } } | Sort-Object { [datetime]$_.Date }
+            if (!($SensorHistory | Select-Object -First 1).Total) {
+                $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-$Dayrange)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, @{N = 'Total'; E = { $_.'Total(Volume)' } }, @{N = 'In'; E = { $_.'TrafficIn(Volume)' } }, @{N = 'Out'; E = { $_.'TrafficOut(Volume)' } } | Sort-Object { [datetime]$_.Date }    
+            }
+            Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'Network Traffic (MB)' -Dataset1 ($SensorHistory | Select-Object 'Total') -Dataset2 ($SensorHistory | Select-Object 'In') -Dataset3  ($SensorHistory | Select-Object 'Out')
+        }
+
+        Function Get-PRTGbandwidth {
+            param(
+                [Parameter(Mandatory = $true)]
+                $SensorID,
+                [int]$Dayrange = 30)
+            $Sensor = get-sensor -Id $SensorID
+            $ChartTitle = ("$($sensor.Probe) - $($sensor.Device) - $($sensor.Name)")
+            $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-$Dayrange)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, @{N = 'Total'; E = { $_.'TrafficTotal(Speed)' } }, @{N = 'In'; E = { $_.'TrafficIn(Speed)' } }, @{N = 'Out'; E = { $_.'TrafficOut(Speed)' } } | Sort-Object { [datetime]$_.Date }
+            Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'Network Throughput (Mbits per second)' -Dataset1 ($SensorHistory | Select-Object 'Total') -Dataset2 ($SensorHistory | Select-Object 'In') -Dataset3  ($SensorHistory | Select-Object 'Out')
+        }
+
+        Function Get-PRTGcpu {
+            param(
+                [Parameter(Mandatory = $true)]
+                $SensorID,
+                [int]$Dayrange = 30)
+            $Sensor = get-sensor -Id $SensorID
+            $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-$Dayrange)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, * | Sort-Object { [datetime]$_.Date }
+            $ChartTitle = ("$($sensor.Probe) - $($sensor.Device) - $($sensor.Name)")
+            Return (Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'Usage (%)' -Dataset1 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor1') { ($SensorHistory | Select-Object 'Processor1') }else { $null }) `
+                    -Dataset2 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor2') { ($SensorHistory | Select-Object 'Processor2') }else { $null }) `
+                    -Dataset3 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor3') { ($SensorHistory | Select-Object 'Processor3') }else { $null }) `
+                    -Dataset4 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor4') { ($SensorHistory | Select-Object 'Processor4') }else { $null }) `
+                    -Dataset5 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor5') { ($SensorHistory | Select-Object 'Processor5') }else { $null }) `
+                    -Dataset6 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor6') { ($SensorHistory | Select-Object 'Processor6') }else { $null }) `
+                    -Dataset7 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor7') { ($SensorHistory | Select-Object 'Processor7') }else { $null }) `
+                    -Dataset8 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor8') { ($SensorHistory | Select-Object 'Processor8') }else { $null }) `
+                    -Dataset9 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor9') { ($SensorHistory | Select-Object 'Processor9') }else { $null }) `
+                    -Dataset10 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor10') { ($SensorHistory | Select-Object 'Processor10') }else { $null }) `
+                    -Dataset11 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor11') { ($SensorHistory | Select-Object 'Processor11') }else { $null }) `
+                    -Dataset12 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor12') { ($SensorHistory | Select-Object 'Processor12') }else { $null }) `
+                    -Dataset13 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor13') { ($SensorHistory | Select-Object 'Processor13') }else { $null }) `
+                    -Dataset14 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor14') { ($SensorHistory | Select-Object 'Processor14') }else { $null }) `
+                    -Dataset15 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor15') { ($SensorHistory | Select-Object 'Processor15') }else { $null }) `
+                    -Dataset16 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor16') { ($SensorHistory | Select-Object 'Processor16') }else { $null }) `
+                    -Dataset17 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor17') { ($SensorHistory | Select-Object 'Processor17') }else { $null }) `
+                    -Dataset18 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor18') { ($SensorHistory | Select-Object 'Processor18') }else { $null }) `
+                    -Dataset19 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor19') { ($SensorHistory | Select-Object 'Processor19') }else { $null }) `
+                    -Dataset20 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor20') { ($SensorHistory | Select-Object 'Processor20') }else { $null }) `
+                    -Dataset21 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor21') { ($SensorHistory | Select-Object 'Processor21') }else { $null }) `
+                    -Dataset22 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor22') { ($SensorHistory | Select-Object 'Processor22') }else { $null }) `
+                    -Dataset23 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor23') { ($SensorHistory | Select-Object 'Processor23') }else { $null }) `
+                    -Dataset24 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor24') { ($SensorHistory | Select-Object 'Processor24') }else { $null }) `
+                    -Dataset25 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor25') { ($SensorHistory | Select-Object 'Processor25') }else { $null }) `
+                    -Dataset26 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor26') { ($SensorHistory | Select-Object 'Processor26') }else { $null }) `
+                    -Dataset27 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor27') { ($SensorHistory | Select-Object 'Processor27') }else { $null }) `
+                    -Dataset28 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor28') { ($SensorHistory | Select-Object 'Processor28') }else { $null }) `
+                    -Dataset29 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor29') { ($SensorHistory | Select-Object 'Processor29') }else { $null }) `
+                    -Dataset30 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor30') { ($SensorHistory | Select-Object 'Processor30') }else { $null }) `
+                    -Dataset31 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor31') { ($SensorHistory | Select-Object 'Processor31') }else { $null }) `
+                    -Dataset32 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor32') { ($SensorHistory | Select-Object 'Processor32') }else { $null }) `
+                    -Dataset33 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor33') { ($SensorHistory | Select-Object 'Processor33') }else { $null }) `
+                    -Dataset34 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor34') { ($SensorHistory | Select-Object 'Processor34') }else { $null }) `
+                    -Dataset35 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor35') { ($SensorHistory | Select-Object 'Processor35') }else { $null }) `
+                    -Dataset36 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor36') { ($SensorHistory | Select-Object 'Processor36') }else { $null }) `
+                    -Dataset37 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor37') { ($SensorHistory | Select-Object 'Processor37') }else { $null }) `
+                    -Dataset38 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor38') { ($SensorHistory | Select-Object 'Processor38') }else { $null }) `
+                    -Dataset39 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor39') { ($SensorHistory | Select-Object 'Processor39') }else { $null }) `
+                    -Dataset40 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor40') { ($SensorHistory | Select-Object 'Processor40') }else { $null }))
+        }
+
+        Function Get-PRTGram {
+            param(
+                [Parameter(Mandatory = $true)]
+                $SensorID,
+                [int]$Dayrange = 30)
+            $Sensor = get-sensor -Id $SensorID
+            $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-$Dayrange)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, @{N = 'Available'; E = { $_.'PercentAvailableMemory' } }, TotalMemory | Sort-Object { [datetime]$_.Date }
+            $ChartTitle = ("$($sensor.Probe) - $($sensor.Device) - $($sensor.Name) - ($(($SensorHistory | Select-Object -First 1).TotalMemory)GB Total)")
+            Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'RAM (Percent)' -Dataset1 ($SensorHistory | Select-Object 'Available') 
+        }
+        Function Get-PRTGdiskFree {
+            param(
+                [Parameter(Mandatory = $true)]
+                $SensorID,
+                [int]$Dayrange = 30)
+            $Sensor = get-sensor -Id $SensorID
+            $SensorHistory = $Sensor | Get-SensorHistory -EndDate ((get-date).AddDays(-$Dayrange)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, @{N = 'PercentFree'; E = { $_.'FreeSpace' } }, Total | Sort-Object { [datetime]$_.Date }
+            $ChartTitle = ("$($sensor.Probe) - $($sensor.Device) - $($sensor.Name) - ($(($SensorHistory | Select-Object -First 1).Total)GB Total)").Replace('\', '')
+            Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType "Percentage of free disk space" -Dataset1 ($SensorHistory | Select-Object 'PercentFree') 
+        }
+
+        Function Get-PRTGprobeHealth {
+            param(
+                [Parameter(Mandatory = $true)]
+                $SensorID)
+            $Sensor = get-sensor -Id $SensorID
+            $Channel = $Sensor | Get-Channel
+            Return ([PSCustomObject]@{
+                    Device                        = $Sensor.Device
+                    Health                        = (Get-LastValue -Table $Channel -Name 'Health')
+                    'Open Requests (100)'         = (Get-LastValue -Table $Channel -Name 'Open Requests')
+                    'Threads (1400)'              = (Get-LastValue -Table $Channel -Name 'Threads')
+                    'Delay WMI (100)'             = (Get-LastValue -Table $Channel -Name 'Interval Delay WMI')
+                    'Delay SNMP (100)'            = (Get-LastValue -Table $Channel -Name 'Interval Delay SNMP')
+                    'Delay non-WMI or SNMP (100)' = (Get-LastValue -Table $Channel -Name 'Interval Delay non-WMI&SNMP')
+                    'Memory Usage GB (3)'         = [math]::round((Get-LastValue -Table $Channel -Name 'Memory Usage') / 1gb, 2)
+                    'Lost Packets (10)'           = (Get-LastValue -Table $Channel -Name 'Lost Flow Packets')
+                    'Toplist Memory (2)'          = (Get-LastValue -Table $Channel -Name 'Toplist Memory')
+                    'Storage Free GB'             = [math]::round((Get-LastValue -Table $Channel -Name 'Data Storage Free') / 1gb, 2)
+                })
+        }
+
+        Function Get-PRTGsystemHealthSensor {
+            param(
+                [Parameter(Mandatory = $true)]
+                $SensorID,
+                [int]$Dayrange = 30)
+            $Sensor = get-sensor -Id $SensorID
+            $ChartTitle = ("$($sensor.Probe) - $($sensor.Device) - $($sensor.Name)")
+            $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-$Dayrange)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, Health, @{N = 'MemoryAvailable'; E = { $_.'AvailableMemory%' } }, @{N = 'RAMuseGB'; E = { $_.'MemoryUsage' } } , @{N='CPUload';E={$_.SystemCPULoad}}| Sort-Object { [datetime]$_.Date }
+            Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'Percent' -Dataset1 ($SensorHistory | Select-Object 'Health') -Dataset2 ($SensorHistory | Select-Object 'MemoryAvailable') -Dataset3 ($SensorHistory | Select-Object 'CPUload')
+        }
+
+        Function Get-PRTGsystemUptime {
+            param(
+                [Parameter(Mandatory = $true)]
+                $SensorID
+            )
+            Return (Get-Sensor -ID $SensorID | Select-Object Device, TotalUptime, TotalDowntime)
+        }
+
+        Function Get-PRTGwindowsUpdateStatus {
+            param(
+                [Parameter(Mandatory = $true)]
+                $SensorID
+            )
+            $Sensor = Get-Sensor -Id $SensorID
+            $Channel = $Sensor | Get-Channel
+            $LastUpdated = New-TimeSpan -Seconds ($Channel | Where-Object { $_.Name -eq 'Time Since Last Update' }).LastValue
+            Return ([PSCustomObject]@{
+                    Device        = $Sensor.Device
+                    'LastUpdated' = "$($LastUpdated.Days)d $($LastUpdated.Hours)h $($LastUpdated.Minutes)m"
+                })
+        }
+
+        Function Get-PRTGwmiSecurityCentre {
+            param(
+                [parameter(Mandatory = $true)]
+                $SensorID
+            )
+            $Sensor = Get-Sensor -Id $SensorID
+            Return ([PSCustomObject]@{
+                    Device = $Sensor.Device
+                    Name   = $Sensor.Name
+                    Status = $Sensor.DisplayLastValue
+                })
+        }
+        
+        Function Get-PRTGcoreHealthSensor {
+            param(
+                [parameter(Mandatory = $true)]
+                $SensorID
+            )
+            $Sensor = Get-Sensor -Id $SensorID | Get-Channel | ConvertTo-ValueTable | Select Health, @{N = 'Queued Notifications'; E = { $_.'Notifications in Send Queue' } }, `
+            @{N = 'Cfg Last Saved'; E = { $timespan = New-TimeSpan -Seconds ($_.'Configuration Last Saved'); "$($Timespan.Days)d $($Timespan.Hours)h $($Timespan.Minutes)m" } }, `
+                'Raw Data Buffer', 'CPU Load', @{N = 'Free Phys Memory GB'; E = { [math]::round($_.'Free Physical Memory' / 1GB, 1) } }, @{N = 'Free Page Memory GB'; `
+                    E                                                                                                                        = { [math]::round($_.'Free Page File Memory' / 1GB, 1) }
+            }
+            Return $Sensor
+        }
+
+        $Sensors = $Probe | Get-Sensor
+        $SensorPercent = 0
+        $SensorPercentPlus = (100 / $Sensors.Count)
+        Show-Kubus
+        Foreach ($Sensor in $Sensors) {
+            $SensorTag = $Sensor.Tags
+            Write-Progress -Activity "$($Probe.Name) sensor data collection progress" -Status "$([math]::round($SensorPercent,0))% Complete" -PercentComplete $SensorPercent
+            if ($SensorTag -match 'systemhealthsensor') {
+                $PRTGsystemHealthSensor += Get-PRTGsystemHealthSensor -SensorID $Sensor.Id
+                $systemHealthSensorContext = 'The System Health sensor provides a combined view of the condition of the system hosting the monitoring probe. A high health value, moderate processor usage, and sufficient available memory indicate that the host has adequate resources to perform monitoring activities reliably.<BR><BR>Repeated reductions in health, sustained high processor usage, or low available memory should be reviewed. Resource pressure on the host may delay monitoring checks, reduce the accuracy of collected results, and create gaps in alerts or reporting.'
+                $PRTGsystemHealthSensor += '<BR><BR>'
+            }
+            elseif ($SensorTag -match 'bandwidthsensor') {
+                $PRTGnetworkTraffic += Get-PRTGnetworkTraffic -SensorID $Sensor.Id
+                $networkTrafficContext = 'This sensor category shows how much of the available network capacity is being used. Low to moderate utilization with occasional short peaks is generally healthy, provided users and applications are performing normally. Consistently high utilization, particularly when it remains close to the maximum available capacity, may indicate congestion and can lead to slow application performance, delayed file transfers, or poor voice and video quality.<BR><BR>The assessment should focus on sustained high usage, repeated peaks at similar times, and links where demand continues to increase over time. Stable utilization well below the available capacity is a positive result, while frequent saturation may indicate that traffic should be redistributed, unnecessary usage investigated, or additional capacity considered.'
+                $PRTGnetworkTraffic += '<BR><BR>'
+            }
+            elseif ($SensorTag -match 'cpu') {
+                $PRTGcpu += Get-PRTGcpu -SensorID $Sensor.Id
+                $cpuContext = 'Processor sensors show how much of a devices processing capacity is being used. Brief increases are normal when applications perform demanding tasks, but utilization should generally return to its usual level afterward. A low or moderate, stable value is typically a positive result.<BR><BR>Sustained high processor usage, repeated periods at or near full capacity, or a steady increase over time may indicate that the device is overloaded. This can cause slow applications, delayed responses, and reduced service performance, and should be reviewed alongside memory, storage, and application activity.'
+                $PRTGcpu += '<BR><BR>'
+            }
+            elseif ($SensorTag -match 'diskfree') {
+                $PRTGdiskFree += Get-PRTGdiskFree -SensorID $Sensor.Id
+                $diskFreeContext = 'Disk capacity sensors show how much storage remains available on each monitored drive or volume. A healthy result is one where sufficient free space remains and the available capacity is reducing at a slow and predictable rate.<BR><BR>Drives approaching their warning or critical thresholds, losing free space rapidly, or repeatedly filling and being manually cleared require attention. Low disk space can prevent updates, backups, logging, database operations, and normal operating-system functions from completing successfully.'
+                $PRTGdiskFree += '<BR><BR>'
+            }
+            elseif ($SensorTag -match 'memory') {
+                $PRTGram += Get-PRTGram -SensorID $Sensor.Id
+                $ramContext = 'Memory sensors show how much physical memory is in use and how much remains available. A healthy system normally retains enough available memory to support its operating system and applications without relying heavily on slower disk-based paging.<BR><BR>Consistently low available memory, steadily increasing usage, or heavy paging may indicate that the system does not have enough memory for its workload. This can cause slow performance, delayed application responses, and in severe cases, application or service failures.'
+                $PRTGram += '<BR><BR>'
+            }
+            elseif ($SensorTag -match 'pingsensor') {
+                $PRTGping += Get-PRTGping -SensorID $Sensor.Id
+                $pingContext = 'Ping sensors show whether a device can be reached and how quickly it responds. No packet loss and a low, stable response time are positive results, as they indicate that the device and the network path are responding consistently. Repeated packet loss, periods of unreachability, or response times that change significantly should be investigated. Occasional isolated packet loss may not indicate a serious issue, but frequent or sustained loss can result in slow applications, interrupted connections, poor voice or video quality, and unreliable access to services.<BR><BR>Ping time measures the complete round trip from the monitoring source to the destination and back. Response times naturally increase as the distance between the two locations grows because data must travel farther. As an approximate guide for a wired network with reasonably direct routing, devices at the same site or within 1 mile may respond in less than 1-5 ms; devices 1-100 miles away may respond in approximately 2-15 ms; 100-500 miles may produce 5-30 ms; 500-1,500 miles may produce 15-50 ms; 1,500-3,000 miles may produce 35-90 ms; and intercontinental distances of 3,000-7,000 miles or more may produce approximately 70-180 ms or higher.<BR><BR>These ranges should be treated as general guidance rather than fixed performance thresholds. The actual network route is often longer than the direct geographic distance, and response time can also be affected by congestion, wireless connections, VPNs, firewalls, the number of network devices crossed, and devices assigning a low priority to ping requests. The most useful indicators are therefore whether latency is appropriate for the distance, remains reasonably stable, and has not increased significantly compared with the devices normal historical performance. Google Cloud estimates approximately 1 ms of round-trip latency for every 100 km—about 62 miles—of actual network path, while noting that routed paths are commonly 1.5 to 2 times the direct map distance.'
+                $PRTGping += '<BR><BR>'
+            }
+            elseif ($SensorTag -match 'probehealthsensor') {
+                $PRTGprobeHealth += Get-PRTGprobeHealth -SensorID $Sensor.Id
+                $probeHealthContext = 'The Probe Health sensor shows whether the monitoring probe is operating correctly and collecting results on schedule. A high overall health value, minimal interval delay, sufficient memory and disk space, and no growing processing backlog are positive indicators.<BR><BR>Reduced health, increasing scan delays, low available resources, or repeated gaps in collected data may indicate that the probe is overloaded or experiencing a system problem. This can cause delayed checks, inaccurate reporting, or missed alerts even when the monitored devices themselves are operating normally.'
+            }
+            elseif ($SensorTag -match 'snmpuptimesensor') {
+                $PRTGsystemUptime += Get-PRTGsystemUptime -SensorID $Sensor.Id
+                $systemUptimeContext = 'System uptime sensors show how long a device has been operating since its last restart. An uptime value that matches the organizations maintenance and patching schedule is generally a positive result.<BR><BR>An unexpectedly low uptime may indicate an unplanned restart, power interruption, system crash, or recent maintenance. An unusually long uptime is not always positive, as it may indicate that required updates or scheduled reboots have not been completed. Results should therefore be compared with approved maintenance and change records.'
+            }
+            elseif ($SensorTag -match 'windowsupdatesstatus') {
+                $PRTGwindowsUpdateStatus += Get-PRTGwindowsUpdateStatus -SensorID $Sensor.Id
+                $windowsUpdateContext = ''
+            }
+            elseif ($SensorTag -match 'WMISecurityCenter') {
+                $PRTGwmiSecurityCentre += Get-PRTGwmiSecurityCentre -SensorID $Sensor.Id
+                $wmiSecurityCentreContext = 'Windows security sensors show whether recognized antivirus, firewall, and endpoint protection products are enabled, current, and reporting a healthy status. Security products that are active, up to date, and operating without errors represent a positive result.<BR><BR>Disabled protection, outdated security definitions, missing products, or an unhealthy status should be reviewed promptly. These findings may indicate a genuine security exposure, although approved exceptions and known reporting limitations should also be considered during the assessment.'
+            }
+            elseif ($SensorTag -match 'corehealthsensor') {
+                $PRTGcorehealth += Get-PRTGcoreHealthSensor -SensorID $Sensor.Id
+                $coreHealthContext = 'The Core Health sensor shows whether the central monitoring server is operating reliably and has sufficient resources to process monitoring data and generate notifications. An overall health value at or close to 100%, low notification queues, successful configuration saves, and normal processor and memory usage are positive indicators.<BR><BR>Repeated reductions in health, growing notification queues, configuration-save failures, or persistently high resource usage should be investigated. These conditions may result in delayed alerts, incomplete reports, missing monitoring results, or interruptions to the monitoring service.'
+            }
+            $SensorPercent += $SensorPercentPlus
+            If ($SensorPercent -gt 100) { $SensorPercent = 100 }
+        }
+
+
+        $css = '<!DOCTYPE html><html><head><title>' + $Customer + ' Sensor Health and Performance Assessment</title><style>#heading{border-radius:25px;border:4px solid #9ab7ab;padding:20px;max-width:1100px;text-align: center;}#reason{border-radius:25px;background-color:#9ab7ab;padding:20px;max-width:1100px;text-align: left}table{font-family:Arial,Helvetica,sans-serif;border-collapse:collapse;width:100%;max-width:1150px;margin:0 auto;}td,th{border:1px solid #ddd;padding:8px;text-align:center;word-break:break-word;}td:first-child,th:first-child{text-align:left;}tr:nth-child(even){background-color:#eeeeee;}tr:hover{background-color:#ddd;}th{padding-top:12px;padding-bottom:12px;background-color:#9ab7ab;color:white;}.container{display:flex;}.left{flex:1;border-right:1px solid #ccc;padding-right:20px;}.right{flex:1;padding-left:20px;}.header-banner{position:relative;width:100%;height:180px;overflow:hidden;}.banner{width:100%;height:100%;object-fit:cover;}.logo{position:absolute;top:20px;left:30px;height:110px;padding:10px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);}.title{position:absolute;right:30px;top:30px;color:#9ab7ab;text-align:right;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 2px 4px rgba(0,0,0,0.5);}@media print{.page-break{break-before:page;page-break-before:always;}}a{color:inherit;text-decoration:none;}.back-to-top{display:inline-block;padding:10px 20px;background-color:#9ab7ab;color:white;text-decoration:none;border-radius:5px;}.back-to-top:hover{background-color:#699381;}</style></head><body><div class="header-banner"><img src="prtg.jpg" alt="Banner" class="banner"><img src="logo.png" alt="Company Logo" class="logo"><div class="title"><h2>Sensor Health and Performance Assessment</h2><p>Report prepared ' + (Get-PrettyDate) + '</p></div></div>'
+        $htmlFile = @()
+        $htmlFile += "$css"
+        $htmlFile | Out-File "$OutputFile.html"
+
+        If ($PRTGsystemHealthSensor) {
+            '<h1 ID="Probe Health"><center><div id="heading">Probe Host System Health</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $systemHealthSensorContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            $PRTGsystemHealthSensor | Out-File "$OutputFile.html" -Append
+        }
+
+        if ($PRTGnetworkTraffic) {
+            '<h1 ID="Probe Health"><center><div id="heading">Bandwidth Utilization and Capacity</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $networkTrafficContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            $PRTGnetworkTraffic | Out-File "$OutputFile.html" -Append
+        }
+
+        if ($PRTGcpu) {
+            '<h1 ID="Probe Health"><center><div id="heading">Processor Utilization and Performance</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $cpuContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            $PRTGcpu | Out-File "$OutputFile.html" -Append
+        }
+
+        if ($PRTGram) {
+            '<h1 ID="Probe Health"><center><div id="heading">Memory Availability and Utilization</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $ramContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            $PRTGram | Out-File "$OutputFile.html" -Append
+        }
+        if ($PRTGdiskFree) {
+            '<h1 ID="Probe Health"><center><div id="heading">Disk Capacity and Free Space</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $diskFreeContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            $PRTGdiskFree | Out-File "$OutputFile.html" -Append
+        }
+
+        if ($PRTGping) {
+            '<h1 ID="Probe Health"><center><div id="heading">Device Availability and Network Response</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $pingContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            $PRTGping | Out-File "$OutputFile.html" -Append
+        }
+
+        if ($PRTGprobeHealth) {
+            '<h1 ID="Probe Health"><center><div id="heading">Probe Health and Collection Performance</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $probeHealthContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            $PRTGprobeHealth | ConvertTo-Html | Out-File "$OutputFile.html" -Append
+            "<BR><BR>"  | Out-File "$OutputFile.html" -Append
+        }
+
+        if ($PRTGsystemUptime) {
+            '<h1 ID="Probe Health"><center><div id="heading">System Availability and Restart History</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $systemUptimeContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            $PRTGsystemUptime | ConvertTo-Html | Out-File "$OutputFile.html" -Append
+            "<BR><BR>"  | Out-File "$OutputFile.html" -Append
+        }
+
+        if ($RTGwindowsUpdateStatus) {
+            '<h1 ID="Probe Health"><center><div id="heading">Windows Patch and Update Compliance</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $windowsUpdateContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            $PRTGwindowsUpdateStatus | ConvertTo-Html | Out-File "$OutputFile.html" -Append
+            "<BR><BR>"  | Out-File "$OutputFile.html" -Append
+        }
+
+        if ($PRTGwmiSecurityCentre) {
+            '<h1 ID="Probe Health"><center><div id="heading">Windows Endpoint Security Status</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $wmiSecurityCentreContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            $PRTGwmiSecurityCentre | ConvertTo-Html  | Out-File "$OutputFile.html" -Append
+            "<BR><BR>"  | Out-File "$OutputFile.html" -Append
+        }
+
+        if ($PRTGcorehealth) {
+            '<h1 ID="Probe Health"><center><div id="heading">Monitoring Core Server Health</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $coreHealthContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            $PRTGcorehealth | ConvertTo-Html  | Out-File "$OutputFile.html" -Append
+            "<BR><BR>"  | Out-File "$OutputFile.html" -Append
+        }
+    }
+    elseif ($Probe.Count -gt 1) {
+        Show-Kubus
+        Write-Output("╔════════════════════════════════════════════════════════════════════════════════════╗")
+        Write-Output("║Multiple customers found matching the name $Customer.  Valid customer names listed below║")
+        Write-Output("╚════════════════════════════════════════════════════════════════════════════════════╝")
+        (Get-Probe | Sort-Object Name).Name
+        Write-Output("╔════════════════════════════════════════════════════════════════════════════════════╗")
+        Write-Output("╚════════════════════════════════════════════════════════════════════════════════════╝")
+    }
+    else {
+        Show-Kubus
+        Write-Output("╔═════════════════════════════════════════════════════════════════════════════╗")
+        Write-Output("║No customer found with the name $Customer.  Valid customer names listed below   ║")
+        Write-Output("╚═════════════════════════════════════════════════════════════════════════════╝")
+        (Get-Probe | Sort-Object Name).Name
+        Write-Output("╔═════════════════════════════════════════════════════════════════════════════╗")
+        Write-Output("╚═════════════════════════════════════════════════════════════════════════════╝")
+    }
+}
