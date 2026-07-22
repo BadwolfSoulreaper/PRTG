@@ -290,7 +290,7 @@ Function Get-PRTGhealthCheck {
                     $Dataset += "," + (Get-Dataset -DatasetName $Dataset40Name)
                 }
 
-                $header = '<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><script src="https://cdn.jsdelivr.net/npm/chart.js"></script><style>body {font-family: Arial, sans-serif;margin: 40px;background: #f6f7f9;color: #222;}.chart-wrapper {max-width: 1100px;margin: 0 auto;padding: 24px;background: #fff;border-radius: 12px;box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);} h1 {text-align: center;margin-bottom: 24px;font-size: 1.5rem;}.chart-container {position: relative;height: 500px;width: 100%;}</style><div class="chart-wrapper"><h1>' + $ChartName + '</h1><div class="chart-container"><canvas id="' + $ChartID + '"></canvas></div></div><script>'
+                $header = '<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><script src="https://cdn.jsdelivr.net/npm/chart.js"></script><style>body {font-family: Arial, sans-serif;margin: 40px;background: #f6f7f9;color: #222;}.chart-wrapper {max-width: 1100px;margin: 0 auto;padding: 24px;background: #fff;border-radius: 12px;box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);} h1 {text-align: center;margin-bottom: 24px;font-size: 1.5rem;}.chart-container {position: relative;height: 500px;width: 100%;}</style><div class="chart-wrapper"><center><h3>' + $ChartName + '</h3></center><div class="chart-container"><canvas id="' + $ChartID + '"></canvas></div></div><script>'
                 $ChartPlot = 'var ctx = document.getElementById("' + $ChartID + '");new Chart(ctx, {type: "line",data: {labels: labels,datasets: [' + $Dataset.replace('(', '_').Replace(')', '') + ']}, options: {responsive: true,maintainAspectRatio: false,animation: false,plugins: {tooltip: {callbacks: {label: function(context) {return "' + $ValueType + '" + context.raw.toLocaleString();}}}},scales: {x: {title: {display: true,text: "' + $XaxisText + '"},ticks: {maxRotation: 60,minRotation: 60}},y: {beginAtZero: true,title: {display: true,text: "' + $ValueType + '"},ticks: {callback: function(value) {return value.toLocaleString();}}}}}});</script>'
 
                 if ($OutputFilePath) {
@@ -538,10 +538,10 @@ Function Get-PRTGhealthCheck {
                 [parameter(Mandatory = $true)]
                 $SensorID
             )
-            $Sensor = Get-Sensor -Id $SensorID | Get-Channel | ConvertTo-ValueTable | Select Health, @{N = 'Queued Notifications'; E = { $_.'Notifications in Send Queue' } }, `
+            $Sensor = Get-Sensor -Id $SensorID | Get-Channel | ConvertTo-ValueTable | Select-Object Health, @{N = 'Queued Notifications'; E = { $_.'Notifications in Send Queue' } }, `
             @{N = 'Cfg Last Saved'; E = { $timespan = New-TimeSpan -Seconds ($_.'Configuration Last Saved'); "$($Timespan.Days)d $($Timespan.Hours)h $($Timespan.Minutes)m" } }, `
                 'Raw Data Buffer', 'CPU Load', @{N = 'Free Phys Memory GB'; E = { [math]::round($_.'Free Physical Memory' / 1GB, 1) } }, @{N = 'Free Page Memory GB'; `
-                    E                                                                                                                        = { [math]::round($_.'Free Page File Memory' / 1GB, 1) }
+                    E = { [math]::round($_.'Free Page File Memory' / 1GB, 1) }
             }
             Return $Sensor
         }
@@ -554,8 +554,11 @@ Function Get-PRTGhealthCheck {
             $SensorTag = $Sensor.Tags
             Write-Progress -Activity "$($Probe.Name) sensor data collection progress" -Status "$([math]::round($SensorPercent,0))% Complete" -PercentComplete $SensorPercent
             if ($SensorTag -match 'bandwidthsensor') {
-                $PRTGnetworkTraffic += Get-PRTGnetworkTraffic -SensorID $Sensor.Id
-                if($PRTGnetworkTraffic){$PRTGnetworkTraffic += '<BR><BR>'}
+                $SensorData = Get-PRTGnetworkTraffic -SensorID $Sensor.Id
+                if($SensorData) {
+                    $PRTGnetworkTraffic += $SensorData
+                    $PRTGnetworkTraffic += '<div class="page-break"><BR>'
+                }
                 $networkTrafficContext = 'This sensor category shows how much of the available network capacity is being used. Low to moderate utilization with occasional short peaks is generally healthy, provided users and applications are performing normally. Consistently high utilization, particularly when it remains close to the maximum available capacity, may indicate congestion and can lead to slow application performance, delayed file transfers, or poor voice and video quality.<BR><BR>The assessment should focus on sustained high usage, repeated peaks at similar times, and links where demand continues to increase over time. Stable utilization well below the available capacity is a positive result, while frequent saturation may indicate that traffic should be redistributed, unnecessary usage investigated, or additional capacity considered.'
                 
             }
@@ -565,7 +568,11 @@ Function Get-PRTGhealthCheck {
                 
             }
             elseif ($SensorTag -match 'memory') {
-                $PRTGram += Get-PRTGram -SensorID $Sensor.Id
+                $SensorData = Get-PRTGram -SensorID $Sensor.Id
+                if($SensorData) {
+                    $PRTGram += $SensorData
+                    $PRTGram += '<div class="page-break"><BR>'
+                }
                 $ramContext = 'Memory sensors show how much physical memory is in use and how much remains available. A healthy system normally retains enough available memory to support its operating system and applications without relying heavily on slower disk-based paging.<BR><BR>Consistently low available memory, steadily increasing usage, or heavy paging may indicate that the system does not have enough memory for its workload. This can cause slow performance, delayed application responses, and in severe cases, application or service failures.'
                 
             }
@@ -575,9 +582,12 @@ Function Get-PRTGhealthCheck {
                 
             }
             elseif ($SensorTag -match 'pingsensor') {
-                $PRTGping += Get-PRTGping -SensorID $Sensor.Id
-                if($PRTGping){$PRTGping += '<BR><BR>'}
-                $pingContext = 'Ping sensors show whether a device can be reached and how quickly it responds. No packet loss and a low, stable response time are positive results, as they indicate that the device and the network path are responding consistently. Repeated packet loss, periods of unreachability, or response times that change significantly should be investigated. Occasional isolated packet loss may not indicate a serious issue, but frequent or sustained loss can result in slow applications, interrupted connections, poor voice or video quality, and unreliable access to services.<BR><BR>Ping time measures the complete round trip from the monitoring source to the destination and back. Response times naturally increase as the distance between the two locations grows because data must travel farther. As an approximate guide for a wired network with reasonably direct routing, devices at the same site or within 1 mile may respond in less than 1-5 ms; devices 1-100 miles away may respond in approximately 2-15 ms; 100-500 miles may produce 5-30 ms; 500-1,500 miles may produce 15-50 ms; 1,500-3,000 miles may produce 35-90 ms; and intercontinental distances of 3,000-7,000 miles or more may produce approximately 70-180 ms or higher.<BR><BR>These ranges should be treated as general guidance rather than fixed performance thresholds. The actual network route is often longer than the direct geographic distance, and response time can also be affected by congestion, wireless connections, VPNs, firewalls, the number of network devices crossed, and devices assigning a low priority to ping requests. The most useful indicators are therefore whether latency is appropriate for the distance, remains reasonably stable, and has not increased significantly compared with the devices normal historical performance. Google Cloud estimates approximately 1 ms of round-trip latency for every 100 km—about 62 miles—of actual network path, while noting that routed paths are commonly 1.5 to 2 times the direct map distance.'
+                $SensorData = Get-PRTGping -SensorID $Sensor.Id
+                if($SensorData) {
+                    $PRTGping += $SensorData
+                    $PRTGping += '<div class="page-break"><BR>'
+                }
+                $pingContext = 'Ping sensors show whether a device is reachable and how quickly it responds. No packet loss and a low, stable response time are positive results. Repeated packet loss, periods of unreachability, or widely varying response times should be investigated, as these can cause slow applications, dropped connections, and poor voice or video quality.<BR><BR>Response time normally increases with distance. As a general wired-network guide: the same site may be below 1–5 ms; 1–100 miles, 2–15 ms; 100–500 miles, 5–30 ms; 500–1,500 miles, 15–50 ms; 1,500–3,000 miles, 35–90 ms; and intercontinental connections, 70–180 ms or higher. These are approximate ranges because routing, congestion, wireless links, VPNs, and firewalls can affect results. The key indicators are stable latency appropriate for the distance and no significant increase from the normal historical level.'
                 
             }
             elseif ($SensorTag -match 'systemhealthsensor') {
@@ -587,7 +597,7 @@ Function Get-PRTGhealthCheck {
             }
             elseif ($SensorTag -match 'probehealthsensor') {
                 $PRTGprobeHealth += Get-PRTGprobeHealth -SensorID $Sensor.Id
-                $probeHealthContext = 'The Probe Health sensor shows whether the monitoring probe is operating correctly and collecting results on schedule. A high overall health value, minimal interval delay, sufficient memory and disk space, and no growing processing backlog are positive indicators.<BR><BR>Reduced health, increasing scan delays, low available resources, or repeated gaps in collected data may indicate that the probe is overloaded or experiencing a system problem. This can cause delayed checks, inaccurate reporting, or missed alerts even when the monitored devices themselves are operating normally.'
+                $probeHealthContext = 'The Probe Health sensor shows whether the monitoring probe is operating reliably and collecting data as expected. The values shown in parentheses within the field headings should be treated as upper error limits. Where the corresponding measured value remains below the stated limit, this is considered a positive result, with lower values generally indicating better probe performance.<BR><BR>Values approaching or exceeding these limits, particularly when they remain elevated over time, may indicate delays, resource pressure, or a growing processing backlog. This can result in late monitoring checks, gaps in collected data, or delayed alerts, and may require scanning intervals or monitoring workloads to be reviewed.'
             }
             elseif ($SensorTag -match 'snmpuptimesensor') {
                 $PRTGsystemUptime += Get-PRTGsystemUptime -SensorID $Sensor.Id
@@ -610,80 +620,88 @@ Function Get-PRTGhealthCheck {
         }
 
 
-        $css = '<!DOCTYPE html><html><head><title>' + $Customer + ' Sensor Health and Performance Assessment</title><style>#heading{border-radius:25px;border:4px solid #9ab7ab;padding:20px;max-width:1100px;text-align: center;}#reason{border-radius:25px;background-color:#9ab7ab;padding:20px;max-width:1100px;text-align: left}table{font-family:Arial,Helvetica,sans-serif;border-collapse:collapse;width:100%;max-width:1150px;margin:0 auto;}td,th{border:1px solid #ddd;padding:8px;text-align:center;word-break:break-word;}td:first-child,th:first-child{text-align:left;}tr:nth-child(even){background-color:#eeeeee;}tr:hover{background-color:#ddd;}th{padding-top:12px;padding-bottom:12px;background-color:#9ab7ab;color:white;}.container{display:flex;}.left{flex:1;border-right:1px solid #ccc;padding-right:20px;}.right{flex:1;padding-left:20px;}.header-banner{position:relative;width:100%;height:180px;overflow:hidden;}.banner{width:100%;height:100%;object-fit:cover;}.logo{position:absolute;top:20px;left:30px;height:110px;padding:10px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);}.title{position:absolute;right:30px;top:30px;color:#9ab7ab;text-align:right;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 2px 4px rgba(0,0,0,0.5);}@media print{.page-break{break-before:page;page-break-before:always;}}a{color:inherit;text-decoration:none;}.back-to-top{display:inline-block;padding:10px 20px;background-color:#9ab7ab;color:white;text-decoration:none;border-radius:5px;}.back-to-top:hover{background-color:#699381;}</style></head><body><div class="header-banner"><img src="prtg.jpg" alt="Banner" class="banner"><img src="logo.png" alt="Company Logo" class="logo"><div class="title"><h2>Sensor Health and Performance Assessment</h2><p>Report prepared ' + (Get-PrettyDate) + '</p></div></div>'
+        $css = '<!DOCTYPE html><html><head><title>' + $Customer + ' Sensor Health and Performance Assessment</title><style>#heading{border-radius:25px;border:4px solid #9ab7ab;padding:20px;max-width:1100px;text-align: center;}#reason{border-radius:25px;background-color:#9ab7ab;padding:20px;max-width:1100px;text-align: left;font-size: 11px}table{font-family:Arial,Helvetica,sans-serif;border-collapse:collapse;width:100%;max-width:1150px;margin:0 auto;}td,th{border:1px solid #ddd;padding:8px;text-align:center;word-break:break-word;}td:first-child,th:first-child{text-align:left;}tr:nth-child(even){background-color:#eeeeee;}tr:hover{background-color:#ddd;}th{padding-top:12px;padding-bottom:12px;background-color:#9ab7ab;color:black;}.container{display:flex;}.left{flex:1;border-right:1px solid #ccc;padding-right:20px;}.right{flex:1;padding-left:20px;}.header-banner{position:relative;width:100%;height:180px;overflow:hidden;}.banner{width:100%;height:100%;object-fit:cover;}.logo{position:absolute;top:20px;left:30px;height:110px;padding:10px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);}.title{position:absolute;right:30px;top:30px;color:#9ab7ab;text-align:right;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 2px 4px rgba(0,0,0,0.5);}@media print{.page-break{break-before:page;page-break-before:always;}}a{color:inherit;text-decoration:none;}.back-to-top{display:inline-block;padding:10px 20px;background-color:#9ab7ab;color:white;text-decoration:none;border-radius:5px;}.back-to-top:hover{background-color:#699381;}</style></head><body><div class="header-banner"><img src="prtg.jpg" alt="Banner" class="banner"><img src="logo.png" alt="Company Logo" class="logo"><div class="title"><h2>Sensor Health and Performance Assessment</h2><p>Report prepared ' + (Get-PrettyDate) + '</p></div></div>'
         $htmlFile = @()
         $htmlFile += "$css"
         $htmlFile | Out-File "$OutputFile.html"
 
         If ($PRTGsystemHealthSensor) {
-            '<BR><h1 ID="Probe Health"><center><div id="heading">Probe Host System Health</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Probe Host System Health</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $systemHealthSensorContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
             $PRTGsystemHealthSensor | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGnetworkTraffic.Length -gt 10) {
-            '<BR><h1 ID="Probe Health"><center><div id="heading">Bandwidth Utilization and Capacity</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Bandwidth Utilization and Capacity</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $networkTrafficContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
             $PRTGnetworkTraffic | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGcpu) {
-            '<BR><h1 ID="Probe Health"><center><div id="heading">Processor Utilization and Performance</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Processor Utilization and Performance</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $cpuContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
             $PRTGcpu | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGram) {
-            '<BR><h1 ID="Probe Health"><center><div id="heading">Memory Availability and Utilization</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Memory Availability and Utilization</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $ramContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
             $PRTGram | Out-File "$OutputFile.html" -Append
         }
         if ($PRTGdiskFree) {
-            '<BR><h1 ID="Probe Health"><center><div id="heading">Disk Capacity and Free Space</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Disk Capacity and Free Space</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $diskFreeContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
             $PRTGdiskFree | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGping) {
-            '<BR><h1 ID="Probe Health"><center><div id="heading">Device Availability and Network Response</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Device Availability and Network Response</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $pingContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
             $PRTGping | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGprobeHealth) {
-            '<BR><h1 ID="Probe Health"><center><div id="heading">Probe Health and Collection Performance</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Probe Health and Collection Performance</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $probeHealthContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
-            $PRTGprobeHealth | ConvertTo-Html | Out-File "$OutputFile.html" -Append
+            $PRTGprobeHealth | Select-Object  Device,Health,'Open Requests (100)','Threads (1400)' | ConvertTo-Html | Out-File "$OutputFile.html" -Append
+            $PRTGprobeHealth | Select-Object  'Delay WMI (100)','Delay SNMP (100)','Delay non-WMI or SNMP (100)' | ConvertTo-Html | Out-File "$OutputFile.html" -Append
+            $PRTGprobeHealth | Select-Object  'Memory Usage GB (3)','Lost Packets (10)','Toplist Memory (2)','Storage Free GB' | ConvertTo-Html | Out-File "$OutputFile.html" -Append
             "<BR><BR>"  | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGsystemUptime) {
-            '<BR><h1 ID="Probe Health"><center><div id="heading">System Availability and Restart History</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">System Availability and Restart History</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $systemUptimeContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
             $PRTGsystemUptime | ConvertTo-Html | Out-File "$OutputFile.html" -Append
             "<BR><BR>"  | Out-File "$OutputFile.html" -Append
         }
 
         if ($RTGwindowsUpdateStatus) {
-            '<BR><h1 ID="Probe Health"><center><div id="heading">Windows Patch and Update Compliance</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Windows Patch and Update Compliance</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $windowsUpdateContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
             $PRTGwindowsUpdateStatus | ConvertTo-Html | Out-File "$OutputFile.html" -Append
             "<BR><BR>"  | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGwmiSecurityCentre) {
-            '<BR><h1 ID="Probe Health"><center><div id="heading">Windows Endpoint Security Status</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Windows Endpoint Security Status</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $wmiSecurityCentreContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
             $PRTGwmiSecurityCentre | ConvertTo-Html  | Out-File "$OutputFile.html" -Append
             "<BR><BR>"  | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGcorehealth) {
-            '<BR><h1 ID="Probe Health"><center><div id="heading">Monitoring Core Server Health</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Monitoring Core Server Health</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $coreHealthContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
-            $PRTGcorehealth | ConvertTo-Html  | Out-File "$OutputFile.html" -Append
+            $PRTGcorehealth | Select-Object Health,'Queued Notifications','Cfg Last Saved','Raw Data Buffer' | ConvertTo-Html  | Out-File "$OutputFile.html" -Append
+            $PRTGcorehealth | Select-Object 'CPU Load','Free Phys Memory GB','Free Page Memory GB' | ConvertTo-Html  | Out-File "$OutputFile.html" -Append
             "<BR><BR>"  | Out-File "$OutputFile.html" -Append
         }
+
+        $ReversePath = $OutputFile.replace('\', '/') #swap the back for forward slashes and store that.
+        $edge = 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
+        & $edge --headless --print-to-pdf="$OutputFile.pdf" "file:///$ReversePath.html" --no-pdf-header-footer | Out-Null
+        #Remove-Item "$OutputFile.html" -Confirm:$false -Force
     }
     elseif ($Probe.Count -gt 1) {
         Show-Kubus
