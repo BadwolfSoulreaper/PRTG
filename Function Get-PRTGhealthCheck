@@ -500,7 +500,8 @@ Function Get-PRTGhealthCheck {
             $Sensor = get-sensor -Id $SensorID
             $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-$Dayrange)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, @{N = 'Available'; E = { $_.'PercentAvailableMemory' } }, TotalMemory | Sort-Object { [datetime]$_.Date }
             $ChartTitle = ("$($sensor.Probe) - $($sensor.Device) - $($sensor.Name) - ($(($SensorHistory | Select-Object -First 1).TotalMemory)GB Total)")
-            Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'RAM (Percent)' -Dataset1 ($SensorHistory | Select-Object 'Available') 
+            $TrendLine = Get-TrendLine -Data $SensorHistory.Available
+            Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'RAM (Percent)' -Dataset1 ($SensorHistory | Select-Object 'Available') -Dataset2 $TrendLine
         }
         Function Get-PRTGdiskFree {
             param(
@@ -510,7 +511,8 @@ Function Get-PRTGhealthCheck {
             $Sensor = get-sensor -Id $SensorID
             $SensorHistory = $Sensor | Get-SensorHistory -EndDate ((get-date).AddDays(-$Dayrange)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, @{N = 'PercentFree'; E = { $_.'FreeSpace' } }, Total | Sort-Object { [datetime]$_.Date }
             $ChartTitle = ("$($sensor.Probe) - $($sensor.Device) - $($sensor.Name) - ($(($SensorHistory | Select-Object -First 1).Total)GB Total)").Replace('\', '')
-            Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType "Percentage of free disk space" -Dataset1 ($SensorHistory | Select-Object 'PercentFree') 
+            $TrendLine = Get-TrendLine -Data $SensorHistory.PercentFree
+            Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType "Percentage of free disk space" -Dataset1 ($SensorHistory | Select-Object 'PercentFree') -Dataset2 $TrendLine
         }
 
         Function Get-PRTGprobeHealth {
