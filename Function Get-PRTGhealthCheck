@@ -22,6 +22,42 @@ Function Get-PRTGhealthCheck {
         $PRTGwmiSecurityCentre = @()
         $PageBreak = $false
       
+        Function Get-TrendLine {
+            Param($Data)
+            # X values are the array positions: 0, 1, 2, 3...
+            $xValues = 0..($data.Count - 1)
+
+            # Calculate averages
+            $xAverage = ($xValues | Measure-Object -Average).Average
+            $yAverage = ($data    | Measure-Object -Average).Average
+
+            # Calculate the slope
+            $top = 0
+            $bottom = 0
+
+            for ($i = 0; $i -lt $data.Count; $i++) {
+                $xDifference = $xValues[$i] - $xAverage
+                $yDifference = $data[$i] - $yAverage
+
+                $top    += $xDifference * $yDifference
+                $bottom += $xDifference * $xDifference
+            }
+
+            $slope = $top / $bottom
+
+            # Calculate where the trendline begins
+            $intercept = $yAverage - ($slope * $xAverage)
+
+            # Generate one trendline value for each original data value
+            $trendline = foreach ($x in $xValues) {
+                [math]::Round($intercept + ($slope * $x), 2)
+            }
+
+            #"Trend slope: $([math]::Round($slope, 3))"
+            #"Trendline:"
+            Return $trendline | Select-Object @{N='TrendLine';E={$_}}
+            }
+
         Function Get-LineGraph {
             param([Parameter(Mandatory = $true)]
                 $ChartName,
@@ -292,7 +328,7 @@ Function Get-PRTGhealthCheck {
                     $Dataset += "," + (Get-Dataset -DatasetName $Dataset40Name)
                 }
 
-                $header = '<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><script src="https://cdn.jsdelivr.net/npm/chart.js"></script><style>body {font-family: Arial, sans-serif;margin: 40px;background: #f6f7f9;color: #222;}.chart-wrapper {max-width: 1100px;margin: 0 auto;padding: 24px;background: #fff;border-radius: 12px;box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);} h1 {text-align: center;margin-bottom: 24px;font-size: 1.5rem;}.chart-container {position: relative;height: 500px;width: 100%;}</style><div class="chart-wrapper"><center><h3>' + $ChartName + '</h3></center><div class="chart-container"><canvas id="' + $ChartID + '"></canvas></div></div><script>'
+                $header = '<br><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><script src="https://cdn.jsdelivr.net/npm/chart.js"></script><style>body {font-family: Arial, sans-serif;margin: 40px;background: #f6f7f9;color: #222;}.chart-wrapper {max-width: 1100px;margin: 0 auto;padding: 24px;background: #fff;border-radius: 12px;box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);} h1 {text-align: center;margin-bottom: 24px;font-size: 1.5rem;}.chart-container {position: relative;height: 500px;width: 100%;}</style><div class="chart-wrapper"><center><h3>' + $ChartName + '</h3></center><div class="chart-container"><canvas id="' + $ChartID + '"></canvas></div></div><script>'
                 $ChartPlot = 'var ctx = document.getElementById("' + $ChartID + '");new Chart(ctx, {type: "line",data: {labels: labels,datasets: [' + $Dataset.replace('(', '_').Replace(')', '') + ']}, options: {responsive: true,maintainAspectRatio: false,animation: false,plugins: {tooltip: {callbacks: {label: function(context) {return "' + $ValueType + '" + context.raw.toLocaleString();}}}},scales: {x: {title: {display: true,text: "' + $XaxisText + '"},ticks: {maxRotation: 60,minRotation: 60}},y: {beginAtZero: true,title: {display: true,text: "' + $ValueType + '"},ticks: {callback: function(value) {return value.toLocaleString();}}}}}});</script>'
 
                 if ($OutputFilePath) {
@@ -395,7 +431,7 @@ Function Get-PRTGhealthCheck {
             Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'Network Throughput (Mbits per second)' -Dataset1 ($SensorHistory | Select-Object 'Total') -Dataset2 ($SensorHistory | Select-Object 'In') -Dataset3  ($SensorHistory | Select-Object 'Out')
         }
 
-        Function Get-PRTGcpu {
+        <#Function Get-PRTGcpu {
             param(
                 [Parameter(Mandatory = $true)]
                 $SensorID,
@@ -443,8 +479,19 @@ Function Get-PRTGhealthCheck {
                     -Dataset38 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor38') { ($SensorHistory | Select-Object 'Processor38') }else { $null }) `
                     -Dataset39 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor39') { ($SensorHistory | Select-Object 'Processor39') }else { $null }) `
                     -Dataset40 $(if ($SensorHistory[0].PSObject.Properties.Name -contains 'Processor40') { ($SensorHistory | Select-Object 'Processor40') }else { $null }))
-        }
+        }#>
 
+        Function Get-PRTGcpu {
+            param(
+                [Parameter(Mandatory = $true)]
+                $SensorID,
+                [int]$Dayrange = 30)
+            $Sensor = get-sensor -Id $SensorID
+            $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-$Dayrange)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, * | Sort-Object { [datetime]$_.Date }
+            $ChartTitle = ("$($sensor.Probe) - $($sensor.Device) - $($sensor.Name)")
+            $TrendLine = Get-TrendLine -Data $SensorHistory.Total
+            Return (Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'Average CPU Usage (%)' -Dataset1 ($SensorHistory | Select-Object Total) -Dataset2 $TrendLine)
+        }
         Function Get-PRTGram {
             param(
                 [Parameter(Mandatory = $true)]
@@ -630,14 +677,14 @@ Function Get-PRTGhealthCheck {
         If ($PRTGsystemHealthSensor) {
             if($PageBreak){$PageBreak = $false}else{'<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append}
             '<h1 ID=Probe Health"><center><div id="heading">Probe Host System Health</div></center></h1>' | Out-File "$OutputFile.html" -Append
-            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $systemHealthSensorContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $systemHealthSensorContext + '</div></center>' | Out-File "$OutputFile.html" -Append
             $PRTGsystemHealthSensor | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGnetworkTraffic.Length -gt 10) {
             if($PageBreak){$PageBreak = $false}else{'<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append}
             '<h1 ID=Probe Health"><center><div id="heading">Bandwidth Utilization and Capacity</div></center></h1>' | Out-File "$OutputFile.html" -Append
-            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $networkTrafficContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $networkTrafficContext + '</div></center>' | Out-File "$OutputFile.html" -Append
             $PRTGnetworkTraffic | Out-File "$OutputFile.html" -Append
             $PageBreak = $true
         }
@@ -645,28 +692,28 @@ Function Get-PRTGhealthCheck {
         if ($PRTGcpu) {
             if($PageBreak){$PageBreak = $false}else{'<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append}
             '<h1 ID=Probe Health"><center><div id="heading">Processor Utilization and Performance</div></center></h1>' | Out-File "$OutputFile.html" -Append
-            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $cpuContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $cpuContext + '</div></center>' | Out-File "$OutputFile.html" -Append
             $PRTGcpu | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGram) {
             if($PageBreak){$PageBreak = $false}else{'<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append}
             '<h1 ID=Probe Health"><center><div id="heading">Memory Availability and Utilization</div></center></h1>' | Out-File "$OutputFile.html" -Append
-            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $ramContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $ramContext + '</div></center>' | Out-File "$OutputFile.html" -Append
             $PRTGram | Out-File "$OutputFile.html" -Append
             $PageBreak = $true
         }
         if ($PRTGdiskFree) {
             if($PageBreak){$PageBreak = $false}else{'<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append}
             '<h1 ID=Probe Health"><center><div id="heading">Disk Capacity and Free Space</div></center></h1>' | Out-File "$OutputFile.html" -Append
-            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $diskFreeContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $diskFreeContext + '</div></center>' | Out-File "$OutputFile.html" -Append
             $PRTGdiskFree | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGping) {
             if($PageBreak){$PageBreak = $false}else{'<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append}
             '<h1 ID=Probe Health"><center><div id="heading">Device Availability and Network Response</div></center></h1>' | Out-File "$OutputFile.html" -Append
-            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $pingContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $pingContext + '</div></center>' | Out-File "$OutputFile.html" -Append
             $PRTGping | Out-File "$OutputFile.html" -Append
             $PageBreak = $true
         }
