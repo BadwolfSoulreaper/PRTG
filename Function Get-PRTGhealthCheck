@@ -20,6 +20,8 @@ Function Get-PRTGhealthCheck {
         $PRTGsystemUptime = @()
         $PRTGwindowsUpdateStatus = @()
         $PRTGwmiSecurityCentre = @()
+        $PageBreak = $false
+      
         Function Get-LineGraph {
             param([Parameter(Mandatory = $true)]
                 $ChartName,
@@ -493,7 +495,7 @@ Function Get-PRTGhealthCheck {
             $Sensor = get-sensor -Id $SensorID
             $ChartTitle = ("$($sensor.Probe) - $($sensor.Device) - $($sensor.Name)")
             $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-$Dayrange)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, Health, @{N = 'MemoryAvailable'; E = { $_.'AvailableMemory%' } }, @{N = 'RAMuseGB'; E = { $_.'MemoryUsage' } } , @{N = 'CPUload'; E = { $_.SystemCPULoad } } | Sort-Object { [datetime]$_.Date }
-            if(($SensorHistory | Measure-Object Health -Sum).Sum) {
+            if (($SensorHistory | Measure-Object Health -Sum).Sum) {
                 Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'Percent' -Dataset1 ($SensorHistory | Select-Object 'Health') -Dataset2 ($SensorHistory | Select-Object 'MemoryAvailable') -Dataset3 ($SensorHistory | Select-Object 'CPUload')
             }
         }
@@ -541,7 +543,7 @@ Function Get-PRTGhealthCheck {
             $Sensor = Get-Sensor -Id $SensorID | Get-Channel | ConvertTo-ValueTable | Select-Object Health, @{N = 'Queued Notifications'; E = { $_.'Notifications in Send Queue' } }, `
             @{N = 'Cfg Last Saved'; E = { $timespan = New-TimeSpan -Seconds ($_.'Configuration Last Saved'); "$($Timespan.Days)d $($Timespan.Hours)h $($Timespan.Minutes)m" } }, `
                 'Raw Data Buffer', 'CPU Load', @{N = 'Free Phys Memory GB'; E = { [math]::round($_.'Free Physical Memory' / 1GB, 1) } }, @{N = 'Free Page Memory GB'; `
-                    E = { [math]::round($_.'Free Page File Memory' / 1GB, 1) }
+                    E                                                                                                                        = { [math]::round($_.'Free Page File Memory' / 1GB, 1) }
             }
             Return $Sensor
         }
@@ -555,9 +557,9 @@ Function Get-PRTGhealthCheck {
             Write-Progress -Activity "$($Probe.Name) sensor data collection progress" -Status "$([math]::round($SensorPercent,0))% Complete" -PercentComplete $SensorPercent
             if ($SensorTag -match 'bandwidthsensor') {
                 $SensorData = Get-PRTGnetworkTraffic -SensorID $Sensor.Id
-                if($SensorData) {
+                if ($SensorData) {
                     $PRTGnetworkTraffic += $SensorData
-                    $PRTGnetworkTraffic += '<div class="page-break"><BR>'
+                    $PRTGnetworkTraffic += '<div class="page-break">'
                 }
                 $networkTrafficContext = 'This sensor category shows how much of the available network capacity is being used. Low to moderate utilization with occasional short peaks is generally healthy, provided users and applications are performing normally. Consistently high utilization, particularly when it remains close to the maximum available capacity, may indicate congestion and can lead to slow application performance, delayed file transfers, or poor voice and video quality.<BR><BR>The assessment should focus on sustained high usage, repeated peaks at similar times, and links where demand continues to increase over time. Stable utilization well below the available capacity is a positive result, while frequent saturation may indicate that traffic should be redistributed, unnecessary usage investigated, or additional capacity considered.'
                 
@@ -569,9 +571,9 @@ Function Get-PRTGhealthCheck {
             }
             elseif ($SensorTag -match 'memory') {
                 $SensorData = Get-PRTGram -SensorID $Sensor.Id
-                if($SensorData) {
+                if ($SensorData) {
                     $PRTGram += $SensorData
-                    $PRTGram += '<div class="page-break"><BR>'
+                    $PRTGram += '<div class="page-break">'
                 }
                 $ramContext = 'Memory sensors show how much physical memory is in use and how much remains available. A healthy system normally retains enough available memory to support its operating system and applications without relying heavily on slower disk-based paging.<BR><BR>Consistently low available memory, steadily increasing usage, or heavy paging may indicate that the system does not have enough memory for its workload. This can cause slow performance, delayed application responses, and in severe cases, application or service failures.'
                 
@@ -583,9 +585,9 @@ Function Get-PRTGhealthCheck {
             }
             elseif ($SensorTag -match 'pingsensor') {
                 $SensorData = Get-PRTGping -SensorID $Sensor.Id
-                if($SensorData) {
+                if ($SensorData) {
                     $PRTGping += $SensorData
-                    $PRTGping += '<div class="page-break"><BR>'
+                    $PRTGping += '<div class="page-break">'
                 }
                 $pingContext = 'Ping sensors show whether a device is reachable and how quickly it responds. No packet loss and a low, stable response time are positive results. Repeated packet loss, periods of unreachability, or widely varying response times should be investigated, as these can cause slow applications, dropped connections, and poor voice or video quality.<BR><BR>Response time normally increases with distance. As a general wired-network guide: the same site may be below 1–5 ms; 1–100 miles, 2–15 ms; 100–500 miles, 5–30 ms; 500–1,500 miles, 15–50 ms; 1,500–3,000 miles, 35–90 ms; and intercontinental connections, 70–180 ms or higher. These are approximate ranges because routing, congestion, wireless links, VPNs, and firewalls can affect results. The key indicators are stable latency appropriate for the distance and no significant increase from the normal historical level.'
                 
@@ -626,75 +628,89 @@ Function Get-PRTGhealthCheck {
         $htmlFile | Out-File "$OutputFile.html"
 
         If ($PRTGsystemHealthSensor) {
-            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Probe Host System Health</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            if($PageBreak){$PageBreak = $false}else{'<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append}
+            '<h1 ID=Probe Health"><center><div id="heading">Probe Host System Health</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $systemHealthSensorContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
             $PRTGsystemHealthSensor | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGnetworkTraffic.Length -gt 10) {
-            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Bandwidth Utilization and Capacity</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            if($PageBreak){$PageBreak = $false}else{'<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append}
+            '<h1 ID=Probe Health"><center><div id="heading">Bandwidth Utilization and Capacity</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $networkTrafficContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
             $PRTGnetworkTraffic | Out-File "$OutputFile.html" -Append
+            $PageBreak = $true
         }
 
         if ($PRTGcpu) {
-            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Processor Utilization and Performance</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            if($PageBreak){$PageBreak = $false}else{'<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append}
+            '<h1 ID=Probe Health"><center><div id="heading">Processor Utilization and Performance</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $cpuContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
             $PRTGcpu | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGram) {
-            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Memory Availability and Utilization</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            if($PageBreak){$PageBreak = $false}else{'<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append}
+            '<h1 ID=Probe Health"><center><div id="heading">Memory Availability and Utilization</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $ramContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
             $PRTGram | Out-File "$OutputFile.html" -Append
+            $PageBreak = $true
         }
         if ($PRTGdiskFree) {
-            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Disk Capacity and Free Space</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            if($PageBreak){$PageBreak = $false}else{'<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append}
+            '<h1 ID=Probe Health"><center><div id="heading">Disk Capacity and Free Space</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $diskFreeContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
             $PRTGdiskFree | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGping) {
-            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Device Availability and Network Response</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            if($PageBreak){$PageBreak = $false}else{'<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append}
+            '<h1 ID=Probe Health"><center><div id="heading">Device Availability and Network Response</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $pingContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
             $PRTGping | Out-File "$OutputFile.html" -Append
+            $PageBreak = $true
         }
 
         if ($PRTGprobeHealth) {
-            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Probe Health and Collection Performance</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            if($PageBreak){$PageBreak = $false}else{'<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append}
+            '<h1 ID=Probe Health"><center><div id="heading">Probe Health and Collection Performance</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $probeHealthContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
-            $PRTGprobeHealth | Select-Object  Device,Health,'Open Requests (100)','Threads (1400)' | ConvertTo-Html | Out-File "$OutputFile.html" -Append
-            $PRTGprobeHealth | Select-Object  'Delay WMI (100)','Delay SNMP (100)','Delay non-WMI or SNMP (100)' | ConvertTo-Html | Out-File "$OutputFile.html" -Append
-            $PRTGprobeHealth | Select-Object  'Memory Usage GB (3)','Lost Packets (10)','Toplist Memory (2)','Storage Free GB' | ConvertTo-Html | Out-File "$OutputFile.html" -Append
+            $PRTGprobeHealth | Select-Object  Device, Health, 'Open Requests (100)', 'Threads (1400)' | ConvertTo-Html | Out-File "$OutputFile.html" -Append
+            $PRTGprobeHealth | Select-Object  'Delay WMI (100)', 'Delay SNMP (100)', 'Delay non-WMI or SNMP (100)' | ConvertTo-Html | Out-File "$OutputFile.html" -Append
+            $PRTGprobeHealth | Select-Object  'Memory Usage GB (3)', 'Lost Packets (10)', 'Toplist Memory (2)', 'Storage Free GB' | ConvertTo-Html | Out-File "$OutputFile.html" -Append
             "<BR><BR>"  | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGsystemUptime) {
-            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">System Availability and Restart History</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            if($PageBreak){$PageBreak = $false}else{'<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append}
+            '<h1 ID=Probe Health"><center><div id="heading">System Availability and Restart History</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $systemUptimeContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
             $PRTGsystemUptime | ConvertTo-Html | Out-File "$OutputFile.html" -Append
             "<BR><BR>"  | Out-File "$OutputFile.html" -Append
         }
 
         if ($RTGwindowsUpdateStatus) {
-            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Windows Patch and Update Compliance</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            if($PageBreak){$PageBreak = $false}else{'<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append}
+            '<h1 ID=Probe Health"><center><div id="heading">Windows Patch and Update Compliance</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $windowsUpdateContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
             $PRTGwindowsUpdateStatus | ConvertTo-Html | Out-File "$OutputFile.html" -Append
             "<BR><BR>"  | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGwmiSecurityCentre) {
-            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Windows Endpoint Security Status</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            if($PageBreak){$PageBreak = $false}else{'<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append}
+            '<h1 ID=Probe Health"><center><div id="heading">Windows Endpoint Security Status</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $wmiSecurityCentreContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
             $PRTGwmiSecurityCentre | ConvertTo-Html  | Out-File "$OutputFile.html" -Append
             "<BR><BR>"  | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGcorehealth) {
-            '<div class="page-break"></div><h1 ID=Probe Health"><center><div id="heading">Monitoring Core Server Health</div></center></h1>' | Out-File "$OutputFile.html" -Append
+            if($PageBreak){$PageBreak = $false}else{'<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append}
+            '<h1 ID=Probe Health"><center><div id="heading">Monitoring Core Server Health</div></center></h1>' | Out-File "$OutputFile.html" -Append
             '<center><div id="reason"><b><u>Assessment Context</u></b><br>' + $coreHealthContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
-            $PRTGcorehealth | Select-Object Health,'Queued Notifications','Cfg Last Saved','Raw Data Buffer' | ConvertTo-Html  | Out-File "$OutputFile.html" -Append
-            $PRTGcorehealth | Select-Object 'CPU Load','Free Phys Memory GB','Free Page Memory GB' | ConvertTo-Html  | Out-File "$OutputFile.html" -Append
+            $PRTGcorehealth | Select-Object Health, 'Queued Notifications', 'Cfg Last Saved', 'Raw Data Buffer' | ConvertTo-Html  | Out-File "$OutputFile.html" -Append
+            $PRTGcorehealth | Select-Object 'CPU Load', 'Free Phys Memory GB', 'Free Page Memory GB' | ConvertTo-Html  | Out-File "$OutputFile.html" -Append
             "<BR><BR>"  | Out-File "$OutputFile.html" -Append
         }
 
