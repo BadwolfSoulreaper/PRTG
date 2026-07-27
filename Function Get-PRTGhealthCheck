@@ -52,7 +52,6 @@ Function Get-PRTGhealthCheck {
             $trendline = foreach ($x in $xValues) {
                 [math]::Round($intercept + ($slope * $x), 2)
             }
-
             Return $trendline | Select-Object @{N = 'TrendLine'; E = { $_ } }
         }
 
@@ -396,7 +395,8 @@ Function Get-PRTGhealthCheck {
             $Sensor = get-sensor -Id $SensorID
             $ChartTitle = ("$($sensor.Probe) - $($sensor.Device) - $($sensor.Group)")
             $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-$Dayrange)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, @{N = 'PingTime(ms)'; E = { [int]$_.PingTime } }, @{N = 'PacketLoss'; E = { [int]$_.PacketLoss } } | Sort-Object { [datetime]$_.Date }
-            Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'Time (ms), #Packets Dropped' -Dataset1 ($SensorHistory | Select-Object 'PingTime(ms)') -Dataset2 ($SensorHistory | Select-Object PacketLoss)
+            $TrendLine = Get-TrendLine -Data $SensorHistory.'PingTime(ms)'
+            Return Get-LineGraph -ChartName $ChartTitle -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'Time (ms), #Packets Dropped' -Dataset1 ($SensorHistory | Select-Object 'PingTime(ms)') -Dataset2 ($SensorHistory | Select-Object PacketLoss) -Dataset3 ($TrendLine | Select-Object @{N='PingTimeTrend';E={$_.TrendLine}})
         }
 
         Function Get-PRTGnetworkTraffic {
