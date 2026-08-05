@@ -8,7 +8,6 @@ Function Get-PRTGhealthCheck {
     $File = ("$Customer-$(Get-date -Format ddMMyyyyHHmm)")
     $OutputFile = "$($OutputFolder.TrimEnd('\'))\$File"
     If ($Probe.Count -eq 1) {
-        $PRTGbandwidth = @()
         $PRTGcorehealth = @()
         $PRTGcpu = @()
         $PRTGdiskFree = @()
@@ -20,18 +19,8 @@ Function Get-PRTGhealthCheck {
         $PRTGsystemUptime = @()
         $PRTGwindowsUpdateStatus = @()
         $PRTGwmiSecurityCentre = @()
-        $ExecSumbandwidth = @()
-        $ExecSumcorehealth = @()
-        $ExecSumcpu = @()
-        $ExecSumdiskFree = @()
         $ExecSumnetworkTraffic = @()
         $ExecSumping = @()
-        $ExecSumprobeHealth = @()
-        $ExecSumram = @()
-        $ExecSumsystemHealthSensor = @()
-        $ExecSumsystemUptime = @()
-        $ExecSumwindowsUpdateStatus = @()
-        $ExecSumwmiSecurityCentre = @()
         $PageBreak = $false
         Function Get-Trend {
             param($First, $Last)
@@ -113,7 +102,6 @@ Function Get-PRTGhealthCheck {
                 [Parameter(Mandatory = $true)]
                 $Dataset1, $Dataset2, $Dataset3, $Dataset4, $Dataset5, $Dataset6, $Dataset7, $Dataset8, $Dataset9, $Dataset10, $Dataset11, $Dataset12, $Dataset13, $Dataset14, $Dataset15, $Dataset16, $Dataset17, $Dataset18, $Dataset19, $Dataset20, $Dataset21, $Dataset22, $Dataset23, $Dataset24, $Dataset25, $Dataset26, $Dataset27, $Dataset28, $Dataset29, $Dataset30, $Dataset31, $Dataset32, $Dataset33, $Dataset34, $Dataset35, $Dataset36, $Dataset37, $Dataset38, $Dataset39, $Dataset40)
 
-            #$ChartID = $ChartName.Replace(' ', '')
             $ChartID = (get-date).Ticks
             Function Get-DataArray {
                 param(
@@ -457,7 +445,6 @@ Function Get-PRTGhealthCheck {
                 $SensorID,
                 [int]$Dayrange = 30)
             $Sensor = get-sensor -Id $SensorID
-            #$ChartTitle = ("$($sensor.Device) - $($sensor.Name) - Throughput")
             $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-$Dayrange)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, @{N = 'Total'; E = { $_.'TrafficTotal(Volume)' } }, @{N = 'In'; E = { $_.'TrafficIn(Volume)' } }, @{N = 'Out'; E = { $_.'TrafficOut(Volume)' } } | Sort-Object { [datetime]$_.Date }
             if (!($SensorHistory | Select-Object -First 1).Total) {
                 $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-$Dayrange)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, @{N = 'Total'; E = { $_.'Total(Volume)' } }, @{N = 'In'; E = { $_.'TrafficIn(Volume)' } }, @{N = 'Out'; E = { $_.'TrafficOut(Volume)' } } | Sort-Object { [datetime]$_.Date }    
@@ -467,7 +454,7 @@ Function Get-PRTGhealthCheck {
                 $Anchor = (get-date).Ticks
                 $ExecSumnetworkTraffic += Get-StatusHtml -Anchor $Anchor -Category $Sensor.Name -AlertLevel (Get-Trend -First ($TrendLine.TrendLine | Select-Object -First 1) -Last ($TrendLine.TrendLine | Select-Object -Last 1))
                 Return [PSCustomObject]@{
-                    Graph = (Get-LineGraph -Anchor $Anchor -ChartName "Cumulative Network Data Transfer Over 24hrs (MB)" -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'Network Traffic (MB)' -Dataset1 ($SensorHistory | Select-Object 'Total') -Dataset2 ($SensorHistory | Select-Object 'In') -Dataset3 ($SensorHistory | Select-Object 'Out') -Dataset4 ($TrendLine | Select-Object @{N = 'TotalTransferTrendLine'; E = { $_.TrendLine } }))
+                    Graph = (Get-LineGraph -Anchor $Anchor -ChartName "Cumulative Network Data Transfer Over 24hrs (MB)" -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'Megabytes Transfered' -Dataset1 ($SensorHistory | Select-Object 'Total') -Dataset2 ($SensorHistory | Select-Object 'In') -Dataset3 ($SensorHistory | Select-Object 'Out') -Dataset4 ($TrendLine | Select-Object @{N = 'TotalTransferTrendLine'; E = { $_.TrendLine } }))
                     ExecSum = $ExecSumnetworkTraffic
                 }
             }
@@ -485,7 +472,7 @@ Function Get-PRTGhealthCheck {
             #$ChartTitle = ("$($sensor.Device) - $($sensor.Name) - Bandwidth")
             $SensorHistory = get-sensor -Id $SensorID | Get-SensorHistory -EndDate ((get-date).AddDays(-$Dayrange)) -Average 84700 | Select-Object @{N = 'Date'; E = { (Get-Date $_.Datetime -Format dd/MMM/yyyy) } }, @{N = 'Total'; E = { $_.'TrafficTotal(Speed)' } }, @{N = 'In'; E = { $_.'TrafficIn(Speed)' } }, @{N = 'Out'; E = { $_.'TrafficOut(Speed)' } } | Sort-Object { [datetime]$_.Date }
             $TrendLine = Get-TrendLine -Data $SensorHistory.Total
-            Return Get-LineGraph -ChartName "Network Throughput Over 24hrs (Mbit/s)" -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'Network Throughput (Mbits per second)' -Dataset1 ($SensorHistory | Select-Object 'Total') -Dataset2 ($SensorHistory | Select-Object 'In') -Dataset3  ($SensorHistory | Select-Object 'Out') -Dataset4 ($TrendLine | Select-Object @{N = 'TotalThroughputTrendLine'; E = { $_.TrendLine } })
+            Return Get-LineGraph -ChartName "Network Throughput Over 24hrs (Mbit/s)" -XaxisLabels ($SensorHistory | Select-Object Date) -ValueType 'Megabits per second' -Dataset1 ($SensorHistory | Select-Object 'Total') -Dataset2 ($SensorHistory | Select-Object 'In') -Dataset3  ($SensorHistory | Select-Object 'Out') -Dataset4 ($TrendLine | Select-Object @{N = 'TotalThroughputTrendLine'; E = { $_.TrendLine } })
         }
 
         <#Function Get-PRTGcpu {
@@ -667,32 +654,38 @@ Function Get-PRTGhealthCheck {
                 $SensorData = Get-PRTGnetworkTraffic -SensorID $Sensor.Id
                 $BandwidthData = Get-PRTGbandwidth -SensorID $Sensor.Id
                 if ($SensorData) {
-                    $PRTGnetworkTraffic += "<center><h3><u>$($Sensor.Group) - $($Sensor.Device) - $($Sensor.Name)</u></h3></center>"
+                    $PageTitle = "$($Sensor.Group) - $($Sensor.Device) - $($Sensor.Name)"
+                    if($PageTitle.Length -gt 60 -And $PageTitle.Length -lt 75) {
+                        $PageTitle = "$($Sensor.Device) - $($Sensor.Name)"
+                    }
+                    elseif ($PageTitle.Length -ge 75) {
+                        $PageTitle = "$($Sensor.Name)"
+                    }
+                    $PRTGnetworkTraffic += "<center><h3><u>$PageTitle</u></h3></center>"
                     $PRTGnetworkTraffic += $SensorData.Graph
                     $ExecSumnetworkTraffic += $SensorData.ExecSum
-                    #$PRTGnetworkTraffic += '<div class="page-break">'
                     $PRTGnetworkTraffic += $BandwidthData
                     $PRTGnetworkTraffic += '<h3><center><button onclick="location.href=' + "'#PRTGnetworkTraffic'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#PRTGnetworkTraffic">Return To Summary</a></button></center></h3>'
                     $PRTGnetworkTraffic += '<div class="page-break">'
                 }
-                $networkTrafficContext = 'This sensor category shows how much of the available network capacity is being used. Low to moderate utilization with occasional short peaks is generally healthy, provided users and applications are performing normally. Consistently high utilization, particularly when it remains close to the maximum available capacity, may indicate congestion and can lead to slow application performance, delayed file transfers, or poor voice and video quality.<BR><BR>The assessment should focus on sustained high usage, repeated peaks at similar times, and links where demand continues to increase over time. Stable utilization well below the available capacity is a positive result, while frequent saturation may indicate that traffic should be redistributed, unnecessary usage investigated, or additional capacity considered.<BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
+                $networkTrafficContext = 'This sensor category shows how much of the available network capacity is being used. Low to moderate utilization with occasional short peaks is generally healthy, provided users and applications are performing normally. Consistently high utilization, particularly when it remains close to the maximum available capacity, may indicate congestion and can lead to slow application performance, delayed file transfers, or poor voice and video quality.<BR><BR>The assessment should focus on sustained high usage, repeated peaks at similar times, and links where demand continues to increase over time. Stable utilization well below the available capacity is a positive result, while frequent saturation may indicate that traffic should be redistributed, unnecessary usage investigated, or additional capacity considered.<BR><BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
             }
             elseif ($SensorTag -match 'cpu') {
                 $PRTGcpu += Get-PRTGcpu -SensorID $Sensor.Id
-                $cpuContext = 'Processor sensors show how much of a devices processing capacity is being used. Brief increases are normal when applications perform demanding tasks, but utilization should generally return to its usual level afterward. A low or moderate, stable value is typically a positive result.<BR><BR>Sustained high processor usage, repeated periods at or near full capacity, or a steady increase over time may indicate that the device is overloaded. This can cause slow applications, delayed responses, and reduced service performance, and should be reviewed alongside memory, storage, and application activity.<BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
+                $cpuContext = 'Processor sensors show how much of a devices processing capacity is being used. Brief increases are normal when applications perform demanding tasks, but utilization should generally return to its usual level afterward. A low or moderate, stable value is typically a positive result.<BR><BR>Sustained high processor usage, repeated periods at or near full capacity, or a steady increase over time may indicate that the device is overloaded. This can cause slow applications, delayed responses, and reduced service performance, and should be reviewed alongside memory, storage, and application activity.<BR><BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
                 
             }
             elseif ($SensorTag -match 'memory') {
                 $SensorData = Get-PRTGram -SensorID $Sensor.Id
-                if ($SensorData) {
+                if ($SensorData -And $SensorData -Notlike "Error creating*") {
                     $PRTGram += $SensorData
                     $PRTGram += '<div class="page-break">'
                 }
-                $ramContext = 'Memory sensors show how much physical memory is in use and how much remains available. A healthy system normally retains enough available memory to support its operating system and applications without relying heavily on slower disk-based paging.<BR><BR>Consistently low available memory, steadily increasing usage, or heavy paging may indicate that the system does not have enough memory for its workload. This can cause slow performance, delayed application responses, and in severe cases, application or service failures.<BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
+                $ramContext = 'Memory sensors show how much physical memory is in use and how much remains available. A healthy system normally retains enough available memory to support its operating system and applications without relying heavily on slower disk-based paging.<BR><BR>Consistently low available memory, steadily increasing usage, or heavy paging may indicate that the system does not have enough memory for its workload. This can cause slow performance, delayed application responses, and in severe cases, application or service failures.<BR><BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
             }
             elseif ($SensorTag -match 'diskfree') {
                 $PRTGdiskFree += Get-PRTGdiskFree -SensorID $Sensor.Id
-                $diskFreeContext = 'Disk capacity sensors show how much storage remains available on each monitored drive or volume. A healthy result is one where sufficient free space remains and the available capacity is reducing at a slow and predictable rate.<BR><BR>Drives approaching their warning or critical thresholds, losing free space rapidly, or repeatedly filling and being manually cleared require attention. Low disk space can prevent updates, backups, logging, database operations, and normal operating-system functions from completing successfully.<BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
+                $diskFreeContext = 'Disk capacity sensors show how much storage remains available on each monitored drive or volume. A healthy result is one where sufficient free space remains and the available capacity is reducing at a slow and predictable rate.<BR><BR>Drives approaching their warning or critical thresholds, losing free space rapidly, or repeatedly filling and being manually cleared require attention. Low disk space can prevent updates, backups, logging, database operations, and normal operating-system functions from completing successfully.<BR><BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
                 
             }
             elseif ($SensorTag -match 'pingsensor') {
@@ -703,31 +696,31 @@ Function Get-PRTGhealthCheck {
                     $Pingcount += 1
                     if ($Pingcount -gt 1) { $PRTGping += '<h3><center><button onclick="location.href=' + "'#PRTGping'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#PRTGping">Return To Summary</a></button></center></h3><div class="page-break">'; $Pingcount = 0 }
                 }
-                $pingContext = 'Ping sensors show whether a device is reachable and how quickly it responds. No packet loss and a low, stable response time are positive results. Repeated packet loss, periods of unreachability, or widely varying response times should be investigated, as these can cause slow applications, dropped connections, and poor voice or video quality.<BR><BR>Response time normally increases with distance. As a general wired-network guide: the same site may be below 1 to 5 ms; 1 to 100 miles, 2 to 15 ms; 100 to 500 miles, 5 to 30 ms; 500 to 1,500 miles, 15 to 50 ms; 1,500 to 3,000 miles, 35 to 90 ms; and intercontinental connections, 70 to 180 ms or higher. These are approximate ranges because routing, congestion, wireless links, VPNs, and firewalls can affect results. The key indicators are stable latency appropriate for the distance and no significant increase from the normal historical level.<BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
+                $pingContext = 'Ping sensors show whether a device is reachable and how quickly it responds. No packet loss and a low, stable response time are positive results. Repeated packet loss, periods of unreachability, or widely varying response times should be investigated, as these can cause slow applications, dropped connections, and poor voice or video quality.<BR><BR>Response time normally increases with distance. As a general wired-network guide: the same site may be below 1 to 5 ms; 1 to 100 miles, 2 to 15 ms; 100 to 500 miles, 5 to 30 ms; 500 to 1,500 miles, 15 to 50 ms; 1,500 to 3,000 miles, 35 to 90 ms; and intercontinental connections, 70 to 180 ms or higher. These are approximate ranges because routing, congestion, wireless links, VPNs, and firewalls can affect results. The key indicators are stable latency appropriate for the distance and no significant increase from the normal historical level.<BR><BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
             }
             elseif ($SensorTag -match 'systemhealthsensor') {
                 $PRTGsystemHealthSensor += Get-PRTGsystemHealthSensor -SensorID $Sensor.Id
-                $systemHealthSensorContext = 'The System Health sensor provides a combined view of the condition of the system hosting the monitoring probe. A high health value, moderate processor usage, and sufficient available memory indicate that the host has adequate resources to perform monitoring activities reliably.<BR><BR>Repeated reductions in health, sustained high processor usage, or low available memory should be reviewed. Resource pressure on the host may delay monitoring checks, reduce the accuracy of collected results, and create gaps in alerts or reporting.<BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
+                $systemHealthSensorContext = 'The System Health sensor provides a combined view of the condition of the system hosting the monitoring probe. A high health value, moderate processor usage, and sufficient available memory indicate that the host has adequate resources to perform monitoring activities reliably.<BR><BR>Repeated reductions in health, sustained high processor usage, or low available memory should be reviewed. Resource pressure on the host may delay monitoring checks, reduce the accuracy of collected results, and create gaps in alerts or reporting.<BR><BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
             }
             elseif ($SensorTag -match 'probehealthsensor') {
                 $PRTGprobeHealth += Get-PRTGprobeHealth -SensorID $Sensor.Id
-                $probeHealthContext = 'The Probe Health sensor shows whether the monitoring probe is operating reliably and collecting data as expected. The values shown in parentheses within the field headings should be treated as upper error limits. Where the corresponding measured value remains below the stated limit, this is considered a positive result, with lower values generally indicating better probe performance.<BR><BR>Values approaching or exceeding these limits, particularly when they remain elevated over time, may indicate delays, resource pressure, or a growing processing backlog. This can result in late monitoring checks, gaps in collected data, or delayed alerts, and may require scanning intervals or monitoring workloads to be reviewed.<BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
+                $probeHealthContext = 'The Probe Health sensor shows whether the monitoring probe is operating reliably and collecting data as expected. The values shown in parentheses within the field headings should be treated as upper error limits. Where the corresponding measured value remains below the stated limit, this is considered a positive result, with lower values generally indicating better probe performance.<BR><BR>Values approaching or exceeding these limits, particularly when they remain elevated over time, may indicate delays, resource pressure, or a growing processing backlog. This can result in late monitoring checks, gaps in collected data, or delayed alerts, and may require scanning intervals or monitoring workloads to be reviewed.<BR><BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
             }
             elseif ($SensorTag -match 'snmpuptimesensor') {
                 $PRTGsystemUptime += Get-PRTGsystemUptime -SensorID $Sensor.Id
-                $systemUptimeContext = 'System uptime sensors show how long a device has been operating since its last restart. An uptime value that matches the organizations maintenance and patching schedule is generally a positive result.<BR><BR>An unexpectedly low uptime may indicate an unplanned restart, power interruption, system crash, or recent maintenance. An unusually long uptime is not always positive, as it may indicate that required updates or scheduled reboots have not been completed. Results should therefore be compared with approved maintenance and change records.<BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
+                $systemUptimeContext = 'System uptime sensors show how long a device has been operating since its last restart. An uptime value that matches the organizations maintenance and patching schedule is generally a positive result.<BR><BR>An unexpectedly low uptime may indicate an unplanned restart, power interruption, system crash, or recent maintenance. An unusually long uptime is not always positive, as it may indicate that required updates or scheduled reboots have not been completed. Results should therefore be compared with approved maintenance and change records.<BR><BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
             }
             elseif ($SensorTag -match 'windowsupdatesstatus') {
                 $PRTGwindowsUpdateStatus += Get-PRTGwindowsUpdateStatus -SensorID $Sensor.Id
-                $windowsUpdateContext = 'Windows update sensors show whether required operating-system updates are installed or remain outstanding. A healthy result is one where critical and security updates are installed within the organizations approved patching timeframe and no repeated installation failures are present.<BR><BR>Large numbers of outstanding updates, overdue security patches, or repeated update failures should be investigated. These conditions may leave systems exposed to known security vulnerabilities or result in inconsistent patch levels across the environment.<BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
+                $windowsUpdateContext = 'Windows update sensors show whether required operating-system updates are installed or remain outstanding. A healthy result is one where critical and security updates are installed within the organizations approved patching timeframe and no repeated installation failures are present.<BR><BR>Large numbers of outstanding updates, overdue security patches, or repeated update failures should be investigated. These conditions may leave systems exposed to known security vulnerabilities or result in inconsistent patch levels across the environment.<BR><BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
             }
             elseif ($SensorTag -match 'WMISecurityCenter') {
                 $PRTGwmiSecurityCentre += Get-PRTGwmiSecurityCentre -SensorID $Sensor.Id
-                $wmiSecurityCentreContext = 'Windows security sensors show whether recognized antivirus, firewall, and endpoint protection products are enabled, current, and reporting a healthy status. Security products that are active, up to date, and operating without errors represent a positive result.<BR><BR>Disabled protection, outdated security definitions, missing products, or an unhealthy status should be reviewed promptly. These findings may indicate a genuine security exposure, although approved exceptions and known reporting limitations should also be considered during the assessment.<BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
+                $wmiSecurityCentreContext = 'Windows security sensors show whether recognized antivirus, firewall, and endpoint protection products are enabled, current, and reporting a healthy status. Security products that are active, up to date, and operating without errors represent a positive result.<BR><BR>Disabled protection, outdated security definitions, missing products, or an unhealthy status should be reviewed promptly. These findings may indicate a genuine security exposure, although approved exceptions and known reporting limitations should also be considered during the assessment.<BR><BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
             }
             elseif ($SensorTag -match 'corehealthsensor') {
                 $PRTGcorehealth += Get-PRTGcoreHealthSensor -SensorID $Sensor.Id
-                $coreHealthContext = 'The Core Health sensor shows whether the central monitoring server is operating reliably and has sufficient resources to process monitoring data and generate notifications. An overall health value at or close to 100%, low notification queues, successful configuration saves, and normal processor and memory usage are positive indicators.<BR><BR>Repeated reductions in health, growing notification queues, configuration-save failures, or persistently high resource usage should be investigated. These conditions may result in delayed alerts, incomplete reports, missing monitoring results, or interruptions to the monitoring service.<BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
+                $coreHealthContext = 'The Core Health sensor shows whether the central monitoring server is operating reliably and has sufficient resources to process monitoring data and generate notifications. An overall health value at or close to 100%, low notification queues, successful configuration saves, and normal processor and memory usage are positive indicators.<BR><BR>Repeated reductions in health, growing notification queues, configuration-save failures, or persistently high resource usage should be investigated. These conditions may result in delayed alerts, incomplete reports, missing monitoring results, or interruptions to the monitoring service.<BR><BR><BR><center><button onclick="location.href=' + "'#top'" + '" style="background:#9ab7ab; color:black; border:1px solid #78958a; padding:10px 18px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.25);"><a href="#top">Return To Assessment Overview</a></button></center>'
             }
             $SensorPercent += $SensorPercentPlus
             If ($SensorPercent -gt 100) { $SensorPercent = 100 }
@@ -748,7 +741,7 @@ Function Get-PRTGhealthCheck {
         if($PRTGwmiSecurityCentre) { $ExecutiveSummary += '<div style="text-align:left; margin-bottom:15px;"><img src="PRTGwmiSecurityCentre.png" style="background:#9ab7ab; padding:5px; border-radius:12px; vertical-align:middle;"> <a href="#PRTGwmiSecurityCentre" style="font-size:20px; vertical-align:middle; margin-left:10px;">Security Centre</a></div>'}
         $ExecutiveSummary += '</div></div></div>'
 
-        $css = '<!DOCTYPE html><html><head><title>' + $Customer + ' Sensor Health and Performance Assessment</title><style>#heading{border-radius:25px;border:4px solid #9ab7ab;padding:20px;max-width:1100px;text-align: center;}#reason{border-radius:25px;background-color:#9ab7ab;padding:20px;max-width:1100px;text-align: left;font-size: 11px}table{font-family:Arial,Helvetica,sans-serif;border-collapse:collapse;width:100%;max-width:1150px;margin:0 auto;}td,th{border:1px solid #ddd;padding:8px;text-align:center;word-break:break-word;}td:first-child,th:first-child{text-align:left;}tr:nth-child(even){background-color:#eeeeee;}tr:hover{background-color:#ddd;}th{padding-top:12px;padding-bottom:12px;background-color:#9ab7ab;color:black;}.container{display:flex;}.left{flex:1;border-right:1px solid #ccc;padding-right:20px;}.right{flex:1;padding-left:20px;}.header-banner{position:relative;width:100%;height:180px;overflow:hidden;}.banner{width:100%;height:100%;object-fit:cover;}.logo{position:absolute;top:20px;left:30px;height:110px;padding:10px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);}.title{position:absolute;right:30px;top:30px;color:#9ab7ab;text-align:right;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 2px 4px rgba(0,0,0,0.5);}@media print{.page-break{break-before:page;page-break-before:always;}}a{color:inherit;text-decoration:none;}.back-to-top{display:inline-block;padding:10px 20px;background-color:#9ab7ab;color:white;text-decoration:none;border-radius:5px;}.back-to-top:hover{background-color:#699381;}</style></head><body Id="top"><div class="header-banner"><img src="prtg.jpg" alt="Banner" class="banner"><img src="logo.png" alt="Company Logo" class="logo"><div class="title"><h2>Sensor Health and Performance Assessment</h2><p>Report prepared ' + (Get-PrettyDate) + '</p></div></div>'
+        $css = '<!DOCTYPE html><html><head><title>' + $Customer + ' Sensor Health and Performance Assessment</title><style>#heading{border-radius:25px;border:4px solid #9ab7ab;padding:20px;max-width:1100px;text-align: center;}#reason{border-radius:25px;background-color:#9ab7ab;padding:20px;max-width:1100px;text-align: left;font-size: 12px}table{font-family:Arial,Helvetica,sans-serif;border-collapse:collapse;width:100%;max-width:1150px;margin:0 auto;}td,th{border:1px solid #ddd;padding:8px;text-align:center;word-break:break-word;}td:first-child,th:first-child{text-align:left;}tr:nth-child(even){background-color:#eeeeee;}tr:hover{background-color:#ddd;}th{padding-top:12px;padding-bottom:12px;background-color:#9ab7ab;color:black;}.container{display:flex;}.left{flex:1;border-right:1px solid #ccc;padding-right:20px;}.right{flex:1;padding-left:20px;}.header-banner{position:relative;width:100%;height:180px;overflow:hidden;}.banner{width:100%;height:100%;object-fit:cover;}.logo{position:absolute;top:20px;left:30px;height:110px;padding:10px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);}.title{position:absolute;right:30px;top:30px;color:#9ab7ab;text-align:right;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 2px 4px rgba(0,0,0,0.5);}@media print{.page-break{break-before:page;page-break-before:always;}}a{color:inherit;text-decoration:none;}.back-to-top{display:inline-block;padding:10px 20px;background-color:#9ab7ab;color:white;text-decoration:none;border-radius:5px;}.back-to-top:hover{background-color:#699381;}</style></head><body Id="top"><div class="header-banner"><img src="prtg.jpg" alt="Banner" class="banner"><img src="logo.png" alt="Company Logo" class="logo"><div class="title"><h2>Sensor Health and Performance Assessment</h2><p>Report prepared ' + (Get-PrettyDate) + '</p></div></div>'
         $htmlFile = @()
         $htmlFile += "$css"
         $htmlFile | Out-File "$OutputFile.html"
@@ -758,14 +751,14 @@ Function Get-PRTGhealthCheck {
         If ($PRTGsystemHealthSensor) {
             if ($PageBreak) { $PageBreak = $false }else { '<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append }
             '<h1 ID="PRTGsystemHealthSensor"><center><div id="heading">Probe Host System Health</div></center></h1>' | Out-File "$OutputFile.html" -Append
-            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $systemHealthSensorContext + '</div></center>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $systemHealthSensorContext + '</div></center><BR>' | Out-File "$OutputFile.html" -Append
             $PRTGsystemHealthSensor | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGnetworkTraffic.Length -gt 10) {
             if ($PageBreak) { $PageBreak = $false }else { '<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append }
             '<h1 ID="PRTGnetworkTraffic"><center><div id="heading">Bandwidth Utilization and Capacity</div></center></h1>' | Out-File "$OutputFile.html" -Append
-            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $networkTrafficContext + '</div></center><BR><center><div id="heading">' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $networkTrafficContext + '</div></center><BR><BR><center><div id="heading">' | Out-File "$OutputFile.html" -Append
             $Count = 0
             $Limit = 16
             Foreach($Item in $ExecSumnetworkTraffic) {
@@ -775,35 +768,35 @@ Function Get-PRTGhealthCheck {
             } 
             '</center></div><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append
             $PRTGnetworkTraffic | Out-File "$OutputFile.html" -Append
-            #'<BR><h3><center><a href="#PRTGnetworkTraffic">Return to Summary</a></center></h3>' | Out-File "$OutputFile.html" -Append
             $PageBreak = $true
         }
 
         if ($PRTGcpu) {
             if ($PageBreak) { $PageBreak = $false }else { '<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append }
             '<h1 ID="PRTGcpu"><center><div id="heading">Processor Utilization and Performance</div></center></h1>' | Out-File "$OutputFile.html" -Append
-            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $cpuContext + '</div></center>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $cpuContext + '</div></center><BR>' | Out-File "$OutputFile.html" -Append
             $PRTGcpu | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGram) {
             if ($PageBreak) { $PageBreak = $false }else { '<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append }
             '<h1 ID="PRTGram"><center><div id="heading">Memory Availability and Utilization</div></center></h1>' | Out-File "$OutputFile.html" -Append
-            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $ramContext + '</div></center>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $ramContext + '</div></center><BR>' | Out-File "$OutputFile.html" -Append
             $PRTGram | Out-File "$OutputFile.html" -Append
             $PageBreak = $true
         }
+        
         if ($PRTGdiskFree) {
             if ($PageBreak) { $PageBreak = $false }else { '<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append }
             '<h1 ID="PRTGdiskFree"><center><div id="heading">Disk Capacity and Free Space</div></center></h1>' | Out-File "$OutputFile.html" -Append
-            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $diskFreeContext + '</div></center>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $diskFreeContext + '</div></center><BR>' | Out-File "$OutputFile.html" -Append
             $PRTGdiskFree | Out-File "$OutputFile.html" -Append
         }
 
         if ($PRTGping) {
             if ($PageBreak) { $PageBreak = $false }else { '<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append }
             '<h1 ID="PRTGping"><center><div id="heading">Device Availability and Network Response</div></center></h1>' | Out-File "$OutputFile.html" -Append
-            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $pingContext + '</div></center><BR><center><div id="heading">' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $pingContext + '</div></center><BR><BR><center><div id="heading">' | Out-File "$OutputFile.html" -Append
             $Count = 0
             Foreach($Item in $ExecSumping){
                 $Item | Out-File "$OutputFile.html" -Append
@@ -823,7 +816,7 @@ Function Get-PRTGhealthCheck {
         if ($PRTGprobeHealth) {
             if ($PageBreak) { $PageBreak = $false }else { '<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append }
             '<h1 ID="PRTGprobeHealth"><center><div id="heading">Probe Health and Collection Performance</div></center></h1>' | Out-File "$OutputFile.html" -Append
-            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $probeHealthContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $probeHealthContext + '</div></center><BR><br>' | Out-File "$OutputFile.html" -Append
             $PRTGprobeHealth | Select-Object  Device, Health, 'Open Requests (100)', 'Threads (1400)' | ConvertTo-Html | Out-File "$OutputFile.html" -Append
             $PRTGprobeHealth | Select-Object  'Delay WMI (100)', 'Delay SNMP (100)', 'Delay non-WMI or SNMP (100)' | ConvertTo-Html | Out-File "$OutputFile.html" -Append
             $PRTGprobeHealth | Select-Object  'Memory Usage GB (3)', 'Lost Packets (10)', 'Toplist Memory (2)', 'Storage Free GB' | ConvertTo-Html | Out-File "$OutputFile.html" -Append
@@ -833,7 +826,7 @@ Function Get-PRTGhealthCheck {
         if ($PRTGsystemUptime) {
             if ($PageBreak) { $PageBreak = $false }else { '<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append }
             '<h1 ID="PRTGsystemUptime"><center><div id="heading">System Availability and Restart History</div></center></h1>' | Out-File "$OutputFile.html" -Append
-            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $systemUptimeContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $systemUptimeContext + '</div></center><BR><br>' | Out-File "$OutputFile.html" -Append
             $PRTGsystemUptime | ConvertTo-Html | Out-File "$OutputFile.html" -Append
             "<BR><BR>"  | Out-File "$OutputFile.html" -Append
         }
@@ -841,7 +834,7 @@ Function Get-PRTGhealthCheck {
         if ($PRTGwindowsUpdateStatus) {
             if ($PageBreak) { $PageBreak = $false }else { '<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append }
             '<h1 ID="PRTGwindowsUpdateStatus"><center><div id="heading">Windows Patch and Update Compliance</div></center></h1>' | Out-File "$OutputFile.html" -Append
-            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $windowsUpdateContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $windowsUpdateContext + '</div></center><BR><br>' | Out-File "$OutputFile.html" -Append
             $PRTGwindowsUpdateStatus | ConvertTo-Html | Out-File "$OutputFile.html" -Append
             "<BR><BR>"  | Out-File "$OutputFile.html" -Append
         }
@@ -849,7 +842,7 @@ Function Get-PRTGhealthCheck {
         if ($PRTGwmiSecurityCentre) {
             if ($PageBreak) { $PageBreak = $false }else { '<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append }
             '<h1 ID="PRTGwmiSecurityCentre"><center><div id="heading">Windows Endpoint Security Status</div></center></h1>' | Out-File "$OutputFile.html" -Append
-            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $wmiSecurityCentreContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $wmiSecurityCentreContext + '</div></center><BR><br>' | Out-File "$OutputFile.html" -Append
             $PRTGwmiSecurityCentre | ConvertTo-Html  | Out-File "$OutputFile.html" -Append
             "<BR><BR>"  | Out-File "$OutputFile.html" -Append
         }
@@ -857,7 +850,7 @@ Function Get-PRTGhealthCheck {
         if ($PRTGcorehealth) {
             if ($PageBreak) { $PageBreak = $false }else { '<BR><div class="page-break"></div>' | Out-File "$OutputFile.html" -Append }
             '<h1 ID="PRTGcorehealth"><center><div id="heading">Monitoring Core Server Health</div></center></h1>' | Out-File "$OutputFile.html" -Append
-            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $coreHealthContext + '</div></center><br>' | Out-File "$OutputFile.html" -Append
+            '<center><div id="reason"><b><u>Assessment Context</u></b><br><BR>' + $coreHealthContext + '</div></center><BR><br>' | Out-File "$OutputFile.html" -Append
             $PRTGcorehealth | Select-Object Health, 'Queued Notifications', 'Cfg Last Saved', 'Raw Data Buffer' | ConvertTo-Html  | Out-File "$OutputFile.html" -Append
             $PRTGcorehealth | Select-Object 'CPU Load', 'Free Phys Memory GB', 'Free Page Memory GB' | ConvertTo-Html  | Out-File "$OutputFile.html" -Append
             "<BR><BR>"  | Out-File "$OutputFile.html" -Append
@@ -866,7 +859,7 @@ Function Get-PRTGhealthCheck {
         $ReversePath = $OutputFile.replace('\', '/') #swap the back for forward slashes and store that.
         $edge = 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
         & $edge --headless --print-to-pdf="$OutputFile.pdf" "file:///$ReversePath.html" --no-pdf-header-footer | Out-Null
-        #Remove-Item "$OutputFile.html" -Confirm:$false -Force
+        Remove-Item "$OutputFile.html" -Confirm:$false -Force
     }
     elseif ($Probe.Count -gt 1) {
         Show-Kubus
